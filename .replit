@@ -23,3 +23,8 @@ expertMode = true
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 20000
+
+[userenv]
+
+[userenv.shared]
+WEBHOOK_SECRET = "a40b4e0256dca07caf3845856576caaf894310787078fe29"

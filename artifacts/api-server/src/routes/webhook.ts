@@ -6,7 +6,7 @@ const router: IRouter = Router();
 
 const webhookPayloadSchema = z.object({
   symbol: z.string().min(1),
-  action: z.enum(["BUY", "SELL"]),
+  action: z.string().transform((val) => val.toUpperCase()).pipe(z.enum(["BUY", "SELL"])),
   price: z.number().optional(),
 });
 
@@ -21,8 +21,12 @@ router.post("/webhook", async (req: Request, res: Response) => {
     return;
   }
 
+  // Accept token from Authorization header OR from query param (for TradingView compatibility)
   const authHeader = req.headers["authorization"] ?? "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  const headerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  const queryToken = typeof req.query["token"] === "string" ? req.query["token"] : "";
+  const token = headerToken || queryToken;
+
   if (token !== secret) {
     res.status(401).json({ error: "Unauthorized" });
     return;
