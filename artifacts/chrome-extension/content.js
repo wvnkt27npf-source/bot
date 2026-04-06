@@ -80,18 +80,61 @@
     return new Promise((r) => setTimeout(r, ms));
   }
 
-  // ---- XM Toggle Enabling ----
+  // ---- Shadow DOM Utilities ----
+  // XM's web terminal (Angular) may place elements inside Shadow DOM hosts.
+
+  function deepQueryAll(selector, root = document) {
+    const results = [];
+    function search(node) {
+      if (!node) return;
+      try {
+        const found = node.querySelectorAll(selector);
+        found.forEach((el) => results.push(el));
+      } catch (_) {}
+      const children = node.querySelectorAll ? Array.from(node.querySelectorAll('*')) : [];
+      children.forEach((el) => {
+        if (el.shadowRoot) search(el.shadowRoot);
+      });
+      if (node.shadowRoot) search(node.shadowRoot);
+    }
+    search(root);
+    return results;
+  }
+
+  function deepQuery(selector, root = document) {
+    return deepQueryAll(selector, root)[0] || null;
+  }
+
+  function deepTextWalker(root = document) {
+    const texts = [];
+    function walk(node) {
+      if (!node) return;
+      const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null);
+      let n;
+      while ((n = walker.nextNode())) texts.push(n);
+      if (node.querySelectorAll) {
+        Array.from(node.querySelectorAll('*')).forEach((el) => {
+          if (el.shadowRoot) walk(el.shadowRoot);
+        });
+      }
+    }
+    walk(root);
+    return texts;
+  }
+
   // Find a toggle switch by its visible label text and enable it if currently off.
   // Returns true if toggle was found AND is now on, false if not found.
 
   function findToggleNear(labelText) {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
-    let node;
-    while ((node = walker.nextNode())) {
+    // Search through normal DOM and shadow DOM text nodes
+    const textNodes = deepTextWalker(document.body);
+    for (const node of textNodes) {
       if (node.nodeValue && node.nodeValue.trim().toLowerCase().includes(labelText.toLowerCase())) {
         let container = node.parentElement;
-        for (let depth = 0; depth < 6 && container; depth++) {
-          const toggle = container.querySelector(
+        for (let depth = 0; depth < 8 && container; depth++) {
+          // Check container itself and shadow root inside it
+          const searchRoot = container.shadowRoot || container;
+          const toggle = searchRoot.querySelector(
             'input[type="checkbox"], [role="switch"], [role="checkbox"], .toggle, .switch, .switcher'
           );
           if (toggle) return toggle;
@@ -99,7 +142,8 @@
         }
       }
     }
-    return null;
+    // Fallback: search all toggles in shadow DOM directly
+    return deepQuery('input[type="checkbox"], [role="switch"]');
   }
 
   function isToggleOn(toggle) {
@@ -166,50 +210,66 @@
 
   // ---- BUY/SELL Button Finding ----
   // XM shows "BUY 54.52" and "SELL 53.69" in the button text.
+  // XM web terminal uses Angular/React — buttons may be divs or have price embedded in child spans.
 
   function findActionButton(action) {
     const actionLower = action.toLowerCase();
     const actionUpper = action.toUpperCase();
     const terms = action === 'BUY' ? ['BUY', 'LONG', 'CALL'] : ['SELL', 'SHORT', 'PUT'];
 
-    // Priority 1: data attributes
-    let btn = document.querySelector(
-      `[data-action="${actionLower}"], [data-action="${actionUpper}"], [data-type="${actionLower}"]`
+    // Priority 1: data attributes (search shadow DOM too)
+    let btn = deepQuery(
+      `[data-action="${actionLower}"], [data-action="${actionUpper}"], [data-type="${actionLower}"], [data-side="${actionLower}"]`
     );
     if (btn) return btn;
 
-    // Priority 2: class-based selectors
+    // Priority 2: class-based selectors — includes shadow DOM (XM: 'buy-price', 'sell-price', 'action-buy')
     const classPatterns = [
       `.btn-${actionLower}`, `.button-${actionLower}`,
       `.${actionLower}-btn`, `.${actionLower}-button`,
-      `[class*="${actionUpper}"]`, `[class*="${actionLower}Btn"]`,
+      `.${actionLower}-price`, `.${actionLower}-action`,
+      `[class*="action-${actionLower}"]`, `[class*="${actionLower}Price"]`,
+      `[class*="${actionLower}Btn"]`, `[class*="${actionLower}Button"]`,
     ];
     for (const pattern of classPatterns) {
-      btn = document.querySelector(pattern);
+      btn = deepQuery(pattern);
       if (btn) return btn;
     }
 
-    // Priority 3: button text matching (handles "BUY 54.52" format on XM)
-    const allButtons = Array.from(
-      document.querySelectorAll('button, [role="button"], a[class*="btn"]')
-    );
+    // Priority 3: broad element scan incl. shadow DOM — button, div, span, a
+    const allClickable = deepQueryAll('button, [role="button"], a, div[class], span[class]');
 
-    btn = allButtons.find((el) => {
-      const text = el.textContent.trim().toUpperCase();
-      return terms.some((t) =>
-        text === t ||
-        text.startsWith(t + ' ') ||
-        text.startsWith(t + '\n') ||
-        text.endsWith(' ' + t)
-      );
+    // 3a: first text node of element starts with BUY/SELL
+    btn = allClickable.find((el) => {
+      for (const node of el.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const t = node.nodeValue.trim().toUpperCase();
+          if (terms.some((term) => t === term || t.startsWith(term))) return true;
+        }
+      }
+      return false;
     });
     if (btn) return btn;
 
-    // Priority 4: aria-label
+    // 3b: full textContent starts with BUY/SELL (handles "BUY 1.15341", "BUY\n1.15341", "BUY1.15341")
+    btn = allClickable.find((el) => {
+      const text = el.textContent.trim().toUpperCase();
+      return terms.some((t) => text === t || text.startsWith(t));
+    });
+    if (btn) return btn;
+
+    // Priority 4: aria-label (shadow DOM)
     for (const term of terms) {
-      btn = document.querySelector(`[aria-label*="${term}" i]`);
+      btn = deepQuery(`[aria-label*="${term}" i]`);
       if (btn) return btn;
     }
+
+    // Priority 5: "Place Order at X" green submit button (XM's final confirm button)
+    const submitBtn = deepQueryAll('button, [role="button"], div[class]').find((el) => {
+      const text = el.textContent.trim().toUpperCase();
+      return text.startsWith('PLACE ORDER') || text === 'PLACE ORDER' || text.startsWith('CONFIRM ORDER');
+    });
+    if (submitBtn) return submitBtn;
 
     return null;
   }
@@ -297,7 +357,17 @@
     // Final fallback: signal manual intervention required
     setStatus(`Manual: Place ${action} order\nTP: $${tpAmount} | SL: $${slAmount}`);
     setTimeout(() => removeExistingOverlay(), 20000);
-    return { success: false, reason: 'button_not_found' };
+
+    // DOM diagnostic: log all buttons/clickables (incl. shadow DOM) to help debug selector issues
+    const allElements = deepQueryAll('button, [role="button"], div[class], span[class], a');
+    const dump = allElements
+      .filter((el) => el.textContent.trim().length > 0 && el.textContent.trim().length < 50)
+      .map((el) => ({ tag: el.tagName, cls: el.className.toString().slice(0, 80), text: el.textContent.trim().slice(0, 30) }))
+      .slice(0, 50);
+    console.warn('[AlgoX] button_not_found — DOM dump (first 50 short elements):', JSON.stringify(dump, null, 2));
+    console.warn('[AlgoX] Page URL:', window.location.href);
+
+    return { success: false, reason: 'button_not_found', domDump: dump.slice(0, 10) };
   }
 
   // ---- Message Listener ----
