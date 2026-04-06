@@ -160,8 +160,8 @@
     const toggle = findToggleNear(labelText);
     if (!toggle) return 'not_found';
     if (!isToggleOn(toggle)) {
-      toggle.click();
-      await delay(250); // wait for React state update
+      dispatchClick(toggle); // use full mouse events for Angular compatibility
+      await delay(300); // wait for state update
     }
     return isToggleOn(toggle) ? 'on' : 'off';
   }
@@ -170,23 +170,31 @@
 
   // XM shows "Price" and "Amount" tabs for TP/SL.
   // We always click "Amount" first so values are in dollar terms (not price levels).
+  // Uses a full MouseEvent so Angular's (click) binding fires correctly.
+  function dispatchClick(el) {
+    el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+    el.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true, cancelable: true }));
+    el.dispatchEvent(new MouseEvent('click',     { bubbles: true, cancelable: true }));
+  }
+
   function clickAmountTab() {
-    const allClickable = deepQueryAll('button, [role="button"], div[class], span[class], a');
+    const allClickable = deepQueryAll('button, [role="button"], div[class], span[class], a, li');
+    // Find the "Amount" tab — must be exactly "Amount" or "AMOUNT", not a longer label
     const amountTab = allClickable.find((el) => {
       const text = el.textContent.trim().toUpperCase();
       return text === 'AMOUNT';
     });
     if (amountTab) {
-      amountTab.click();
+      dispatchClick(amountTab);
       return true;
     }
     return false;
   }
 
   async function findAndSetTpSl(tpAmount, slAmount) {
-    // Ensure "Amount" tab is selected before setting values; wait for UI re-render
+    // Ensure "Amount" tab is selected before setting values; wait for Angular re-render
     const switched = clickAmountTab();
-    if (switched) await delay(300);
+    if (switched) await delay(500);
 
     // Search includes shadow DOM
     const tpPatterns = [
@@ -256,21 +264,47 @@
   }
 
   // ---- BUY/SELL Button Finding ----
-  // XM shows "BUY 54.52" and "SELL 53.69" in the button text.
-  // XM web terminal uses Angular/React — buttons may be divs or have price embedded in child spans.
+  // XM has two ways to place an order:
+  //   A) "Place Order at X" green button (bottom of form) — includes TP/SL, PREFERRED
+  //   B) One-Click BUY/SELL price button (top of panel) — immediate, no TP/SL form
+  // We always prefer A so TP/SL is applied.
+
+  function isLikelyClickable(el) {
+    const tag = el.tagName;
+    if (['BUTTON', 'A'].includes(tag)) return true;
+    if (el.getAttribute('role') === 'button') return true;
+    const cls = (el.className || '').toString().toLowerCase();
+    return cls.includes('btn') || cls.includes('button') || cls.includes('action') || cls.includes('click');
+  }
 
   function findActionButton(action) {
     const actionLower = action.toLowerCase();
     const actionUpper = action.toUpperCase();
     const terms = action === 'BUY' ? ['BUY', 'LONG', 'CALL'] : ['SELL', 'SHORT', 'PUT'];
 
-    // Priority 1: data attributes (search shadow DOM too)
-    let btn = deepQuery(
+    // Priority 1 (HIGHEST): "Place Order at X" — this submits the form WITH TP/SL
+    // Skip if disabled (TP/SL validation still failing) — retry loop will wait for it to enable
+    const allElements = deepQueryAll('button, [role="button"], div[class], span[class], a');
+    const isDisabled = (el) => {
+      if (el.disabled) return true;
+      if (el.getAttribute('aria-disabled') === 'true') return true;
+      const cls = (el.className || '').toString().toLowerCase();
+      return cls.includes('disabled') || cls.includes('is-disabled');
+    };
+    let btn = allElements.find((el) => {
+      if (isDisabled(el)) return false;
+      const text = el.textContent.trim().toUpperCase();
+      return (text.startsWith('PLACE ORDER') || text.startsWith('CONFIRM ORDER')) && isLikelyClickable(el);
+    });
+    if (btn) return btn;
+
+    // Priority 2: data attributes (search shadow DOM too)
+    btn = deepQuery(
       `[data-action="${actionLower}"], [data-action="${actionUpper}"], [data-type="${actionLower}"], [data-side="${actionLower}"]`
     );
     if (btn) return btn;
 
-    // Priority 2: class-based selectors — includes shadow DOM (XM: 'buy-price', 'sell-price', 'action-buy')
+    // Priority 3: class-based selectors (XM: 'buy-price', 'sell-price', 'action-buy')
     const classPatterns = [
       `.btn-${actionLower}`, `.button-${actionLower}`,
       `.${actionLower}-btn`, `.${actionLower}-button`,
@@ -283,40 +317,36 @@
       if (btn) return btn;
     }
 
-    // Priority 3: broad element scan incl. shadow DOM — button, div, span, a
+    // Priority 4: broad text scan — BUY/SELL price button at top of XM panel
+    // Must be short text (price button, not a label like "Buy When Price is")
     const allClickable = deepQueryAll('button, [role="button"], a, div[class], span[class]');
 
-    // 3a: first text node of element starts with BUY/SELL
+    // 4a: first child text node starts with BUY/SELL and element seems clickable
     btn = allClickable.find((el) => {
+      if (!isLikelyClickable(el)) return false;
       for (const node of el.childNodes) {
         if (node.nodeType === Node.TEXT_NODE) {
           const t = node.nodeValue.trim().toUpperCase();
-          if (terms.some((term) => t === term || t.startsWith(term))) return true;
+          if (terms.some((term) => t === term || t.startsWith(term + ' '))) return true;
         }
       }
       return false;
     });
     if (btn) return btn;
 
-    // 3b: full textContent starts with BUY/SELL (handles "BUY 1.15341", "BUY\n1.15341", "BUY1.15341")
+    // 4b: full textContent — must start with BUY/SELL and be short (< 20 chars) to avoid false positives
     btn = allClickable.find((el) => {
       const text = el.textContent.trim().toUpperCase();
-      return terms.some((t) => text === t || text.startsWith(t));
+      if (text.length > 20) return false; // skip long labels like "Buy When Price is"
+      return terms.some((t) => text === t || text.startsWith(t + ' ') || text.startsWith(t + '\n'));
     });
     if (btn) return btn;
 
-    // Priority 4: aria-label (shadow DOM)
+    // Priority 5: aria-label (shadow DOM)
     for (const term of terms) {
       btn = deepQuery(`[aria-label*="${term}" i]`);
       if (btn) return btn;
     }
-
-    // Priority 5: "Place Order at X" green submit button (XM's final confirm button)
-    const submitBtn = deepQueryAll('button, [role="button"], div[class]').find((el) => {
-      const text = el.textContent.trim().toUpperCase();
-      return text.startsWith('PLACE ORDER') || text === 'PLACE ORDER' || text.startsWith('CONFIRM ORDER');
-    });
-    if (submitBtn) return submitBtn;
 
     return null;
   }
@@ -368,17 +398,17 @@
       }
 
       setStatus(`Clicking ${action}...`);
-      btn.focus();
-      btn.click();
-      await delay(400);
+      try { btn.focus(); } catch (_) {}
+      dispatchClick(btn);
+      await delay(600);
 
-      // Auto-confirm any confirmation dialog
-      const confirmBtns = Array.from(document.querySelectorAll('button')).filter((b) => {
+      // Auto-confirm any confirmation dialog that may appear
+      const confirmBtns = deepQueryAll('button, [role="button"]').filter((b) => {
         const text = b.textContent.trim().toUpperCase();
         return ['CONFIRM', 'OK', 'YES', 'PLACE ORDER', 'SUBMIT'].includes(text);
       });
       if (confirmBtns.length > 0) {
-        confirmBtns[0].click();
+        dispatchClick(confirmBtns[0]);
         setStatus('Order confirmed!');
       } else {
         setStatus(`${action} order placed!`);
