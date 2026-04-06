@@ -168,17 +168,39 @@
 
   // ---- TP/SL Input Setting ----
 
-  function findAndSetTpSl(tpAmount, slAmount) {
+  // XM shows "Price" and "Amount" tabs for TP/SL.
+  // We always click "Amount" first so values are in dollar terms (not price levels).
+  function clickAmountTab() {
+    const allClickable = deepQueryAll('button, [role="button"], div[class], span[class], a');
+    const amountTab = allClickable.find((el) => {
+      const text = el.textContent.trim().toUpperCase();
+      return text === 'AMOUNT';
+    });
+    if (amountTab) {
+      amountTab.click();
+      return true;
+    }
+    return false;
+  }
+
+  async function findAndSetTpSl(tpAmount, slAmount) {
+    // Ensure "Amount" tab is selected before setting values; wait for UI re-render
+    const switched = clickAmountTab();
+    if (switched) await delay(300);
+
+    // Search includes shadow DOM
     const tpPatterns = [
-      'input[name*="take" i]', 'input[name*="tp" i]', 'input[name*="profit" i]',
       'input[placeholder*="take profit" i]', 'input[placeholder*="profit" i]',
+      'input[placeholder*="tp" i]',
+      'input[name*="take" i]', 'input[name*="tp" i]', 'input[name*="profit" i]',
       'input[id*="take" i]', 'input[id*="profit" i]',
       '[class*="takeProfit"] input', '[class*="take-profit"] input',
       '[class*="tp"] input'
     ];
     const slPatterns = [
-      'input[name*="stop" i]', 'input[name*="sl" i]', 'input[name*="loss" i]',
       'input[placeholder*="stop loss" i]', 'input[placeholder*="loss" i]',
+      'input[placeholder*="sl" i]',
+      'input[name*="stop" i]', 'input[name*="sl" i]', 'input[name*="loss" i]',
       'input[id*="stop" i]', 'input[id*="loss" i]',
       '[class*="stopLoss"] input', '[class*="stop-loss"] input',
       '[class*="sl"] input'
@@ -188,7 +210,7 @@
     let slSet = false;
 
     for (const pattern of tpPatterns) {
-      const el = document.querySelector(pattern);
+      const el = deepQuery(pattern);
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
         setInputValue(el, tpAmount);
         tpSet = true;
@@ -197,11 +219,36 @@
     }
 
     for (const pattern of slPatterns) {
-      const el = document.querySelector(pattern);
+      const el = deepQuery(pattern);
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
         setInputValue(el, slAmount);
         slSet = true;
         break;
+      }
+    }
+
+    // Fallback: find all visible inputs near TP/SL label text
+    if (!tpSet || !slSet) {
+      const allInputs = deepQueryAll('input[type="text"], input[type="number"], input:not([type])');
+      const textNodes = deepTextWalker(document.body);
+      for (const node of textNodes) {
+        const val = (node.nodeValue || '').trim().toUpperCase();
+        if (!tpSet && (val.includes('TAKE PROFIT') || val.includes('PROFIT AMOUNT') || val.includes('TP'))) {
+          let el = node.parentElement;
+          for (let d = 0; d < 5 && el; d++) {
+            const inp = el.querySelector('input');
+            if (inp) { setInputValue(inp, tpAmount); tpSet = true; break; }
+            el = el.parentElement;
+          }
+        }
+        if (!slSet && (val.includes('STOP LOSS') || val.includes('LOSS AMOUNT') || val.includes('SL'))) {
+          let el = node.parentElement;
+          for (let d = 0; d < 5 && el; d++) {
+            const inp = el.querySelector('input');
+            if (inp) { setInputValue(inp, slAmount); slSet = true; break; }
+            el = el.parentElement;
+          }
+        }
       }
     }
 
@@ -298,8 +345,8 @@
         return false; // DOM not ready yet — retry
       }
 
-      // Step 3: Set TP/SL input values
-      const { tpSet, slSet } = findAndSetTpSl(tpAmount, slAmount);
+      // Step 3: Set TP/SL input values (async — clicks "Amount" tab and waits for re-render)
+      const { tpSet, slSet } = await findAndSetTpSl(tpAmount, slAmount);
 
       // Policy: if TP/SL toggle was found but inputs are absent or values not set,
       // log a warning and skip this attempt — don't place an unprotected order.

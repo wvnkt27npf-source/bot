@@ -170,7 +170,14 @@ async function poll() {
 
     await saveStatus({
       processingStatus: tradeResult?.success ? 'success' : 'manual_required',
-      lastProcessed: Date.now()
+      lastProcessed: Date.now(),
+      lastTradeContext: {
+        tabId,
+        action: signal.action,
+        tpAmount: settings.tpAmount,
+        slAmount: settings.slAmount,
+        symbol: signal.symbol
+      }
     });
 
     const notifOptions = {
@@ -220,6 +227,50 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   if (msg.type === 'TOGGLE_ENABLED') {
     chrome.storage.local.set({ enabled: msg.enabled }, () => sendResponse({ ok: true }));
+    return true;
+  }
+  if (msg.type === 'RETRY_TRADE') {
+    chrome.storage.local.get(['lastTradeContext', 'serverUrl'], async (data) => {
+      const ctx = data.lastTradeContext;
+      if (!ctx) { sendResponse({ ok: false, reason: 'no_last_trade' }); return; }
+
+      await saveStatus({ processingStatus: 'retrying' });
+
+      // Try to reuse existing XM tab; fallback to any XM tab
+      const findTab = () => new Promise((resolve) => {
+        chrome.tabs.get(ctx.tabId, (tab) => {
+          if (!chrome.runtime.lastError && tab) return resolve(tab.id);
+          chrome.tabs.query({ url: 'https://my.xm.com/*' }, (tabs) => {
+            resolve(tabs.length > 0 ? tabs[0].id : null);
+          });
+        });
+      });
+
+      const tabId = await findTab();
+      if (!tabId) {
+        await saveStatus({ processingStatus: 'manual_required' });
+        sendResponse({ ok: false, reason: 'no_xm_tab' });
+        return;
+      }
+
+      // Bring XM tab to front
+      chrome.tabs.update(tabId, { active: true });
+      chrome.tabs.get(tabId, (t) => {
+        if (t && t.windowId) chrome.windows.update(t.windowId, { focused: true });
+      });
+
+      await new Promise((r) => setTimeout(r, 500));
+
+      const tradeResult = await sendTradeToContentScript(tabId, ctx.action, ctx.tpAmount, ctx.slAmount);
+      console.log('[AlgoX] Retry result:', tradeResult);
+
+      await saveStatus({
+        processingStatus: tradeResult?.success ? 'success' : 'manual_required',
+        lastProcessed: Date.now()
+      });
+
+      sendResponse({ ok: true, tradeResult });
+    });
     return true;
   }
 });

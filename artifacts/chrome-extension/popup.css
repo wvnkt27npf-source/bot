@@ -128,6 +128,17 @@ body {
 .btn-primary:hover { background: #2563eb; }
 .btn-primary:active { background: #1d4ed8; }
 
+.btn-retry {
+  background: #f59e0b;
+  color: #000;
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 13px;
+}
+.btn-retry:hover { background: #d97706; }
+.btn-retry:active { background: #b45309; }
+.btn-retry:disabled { background: #6b7280; color: #d1d5db; cursor: not-allowed; }
+
 /* Toggle */
 .toggle-row {
   display: flex;

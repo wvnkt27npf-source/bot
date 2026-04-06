@@ -15,7 +15,8 @@ const PROCESSING_LABELS = {
   idle: null,
   opening_tab: 'Opening XM page...',
   placing_order: 'Placing order...',
-  success: 'Order placed!',
+  retrying: 'Retrying trade...',
+  success: 'Order placed! ✓',
   manual_required: 'Manual action needed',
   symbol_not_found: 'Symbol not configured'
 };
@@ -82,6 +83,11 @@ function updateUI(data) {
     processingSection.style.display = 'none';
   }
 
+  // Show retry button when last signal exists and trade failed or succeeded (allow re-trade)
+  const retrySection = $('retrySection');
+  const showRetry = lastSignal && ['manual_required', 'success', 'symbol_not_found'].includes(processingStatus);
+  retrySection.style.display = showRetry ? 'block' : 'none';
+
   // Last poll time
   $('lastPollText').textContent = lastPoll
     ? `Last poll: ${timeAgo(lastPoll)}`
@@ -136,6 +142,23 @@ $('enabledToggle').addEventListener('change', (e) => {
       ? 'Auto trading is active'
       : 'Auto trading is paused';
     chrome.storage.local.set({ enabled });
+  });
+});
+
+// Retry last signal
+$('retryBtn').addEventListener('click', () => {
+  const btn = $('retryBtn');
+  btn.disabled = true;
+  btn.textContent = 'Retrying...';
+  chrome.runtime.sendMessage({ type: 'RETRY_TRADE' }, (response) => {
+    if (chrome.runtime.lastError) {
+      btn.textContent = 'Error — try again';
+      btn.disabled = false;
+      return;
+    }
+    btn.textContent = response?.ok ? '↺ Retry Last Signal' : 'Error — try again';
+    btn.disabled = false;
+    setTimeout(pollStatus, 1000);
   });
 });
 
