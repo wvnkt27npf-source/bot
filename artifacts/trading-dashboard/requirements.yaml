@@ -1,0 +1,11 @@
+packages:
+  "framer-motion": "For fluid page transitions and micro-interactions"
+  "date-fns": "For formatting relative timestamps on trading signals"
+  "clsx": "Utility for constructing className conditionally"
+  "tailwind-merge": "Utility for merging tailwind classes without style conflicts"
+  "lucide-react": "Beautiful, consistent iconography"
+
+notes:
+  - Hooks are imported directly from `@workspace/api-client-react`.
+  - Polling is enabled for the signals and settings endpoints to keep the dashboard real-time.
+  - Using framer-motion for high-end trading terminal feel (fade-ins, list staggered reveals).

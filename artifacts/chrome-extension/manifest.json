@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "AlgoX Trader",
+  "version": "1.0.0",
+  "description": "Automated XM broker trading from TradingView ALGOX V6 signals",
+  "permissions": [
+    "storage",
+    "tabs",
+    "alarms",
+    "scripting",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://my.xm.com/*"
+  ],
+  "optional_host_permissions": [
+    "*://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "AlgoX Trader",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://my.xm.com/symbol-info/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

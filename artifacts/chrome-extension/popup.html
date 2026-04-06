@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlgoX Trader</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="popup">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 12L7 8L11 14L15 6L19 10L21 8" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M21 8V16" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <span class="logo-text">AlgoX Trader</span>
+      </div>
+      <div class="status-badge" id="statusBadge">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Connecting...</span>
+      </div>
+    </div>
+
+    <!-- Server URL Section -->
+    <div class="section">
+      <label class="label">API Server URL</label>
+      <div class="input-row">
+        <input
+          type="url"
+          id="serverUrl"
+          class="input"
+          placeholder="https://your-app.replit.app"
+        />
+        <button id="saveBtn" class="btn btn-primary">Save</button>
+      </div>
+      <p class="hint">Your Replit app URL (without trailing slash)</p>
+    </div>
+
+    <!-- Toggle Row -->
+    <div class="section">
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Auto Trading</div>
+          <div class="toggle-sublabel" id="toggleSublabel">Enable automated order placement</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="enabledToggle" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Last Signal -->
+    <div class="section">
+      <label class="label">Last Signal</label>
+      <div class="signal-card" id="lastSignalCard">
+        <div class="no-signal" id="noSignal">No signals yet</div>
+        <div class="signal-info hidden" id="signalInfo">
+          <div class="signal-row">
+            <span class="signal-symbol" id="sigSymbol">—</span>
+            <span class="signal-action" id="sigAction">—</span>
+          </div>
+          <div class="signal-meta">
+            <span id="sigPrice"></span>
+            <span id="sigTime"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Processing Status -->
+    <div class="section" id="processingSection" style="display:none;">
+      <div class="processing-row">
+        <div class="spinner" id="spinner"></div>
+        <span id="processingText">Processing...</span>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span id="lastPollText">Last poll: never</span>
+      <a href="#" id="openDashboard" class="dashboard-link">Open Dashboard →</a>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

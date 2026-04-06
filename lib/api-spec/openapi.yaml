@@ -1,0 +1,369 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: webhook
+    description: TradingView webhook
+  - name: signals
+    description: Trading signals
+  - name: symbols
+    description: Symbol management
+  - name: settings
+    description: Automation settings
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /webhook:
+    post:
+      operationId: receiveWebhook
+      tags: [webhook]
+      summary: Receive TradingView signal
+      description: Receives a BUY/SELL signal from TradingView alert webhook
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookPayload"
+      responses:
+        "200":
+          description: Signal received
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookResponse"
+        "401":
+          description: Unauthorized
+
+  /signals:
+    get:
+      operationId: listSignals
+      tags: [signals]
+      summary: List all signals
+      description: Returns paginated list of trading signals
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: processed
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Signal list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignalListResponse"
+
+  /signals/latest:
+    get:
+      operationId: getLatestSignal
+      tags: [signals]
+      summary: Get latest unprocessed signal
+      description: Returns the most recent unprocessed signal for the extension to poll
+      responses:
+        "200":
+          description: Latest signal or null
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LatestSignalResponse"
+
+  /signals/{id}/processed:
+    patch:
+      operationId: markSignalProcessed
+      tags: [signals]
+      summary: Mark signal as processed
+      description: Marks a signal as processed after the extension places the trade
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Signal updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Signal"
+        "404":
+          description: Signal not found
+
+  /symbols:
+    get:
+      operationId: listSymbols
+      tags: [symbols]
+      summary: List symbols
+      description: Returns all configured trading symbols with XM URLs
+      responses:
+        "200":
+          description: Symbol list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Symbol"
+    post:
+      operationId: createSymbol
+      tags: [symbols]
+      summary: Add a symbol
+      description: Adds a new symbol with its XM broker URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSymbolRequest"
+      responses:
+        "201":
+          description: Symbol created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Symbol"
+
+  /symbols/{id}:
+    delete:
+      operationId: deleteSymbol
+      tags: [symbols]
+      summary: Delete a symbol
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Symbol deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResponse"
+        "404":
+          description: Symbol not found
+
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get automation settings
+      responses:
+        "200":
+          description: Current settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update automation settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSettingsRequest"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    WebhookPayload:
+      type: object
+      properties:
+        symbol:
+          type: string
+          description: Trading symbol e.g. BTCUSD
+        action:
+          type: string
+          enum: [BUY, SELL]
+        price:
+          type: number
+          description: Signal price
+      required:
+        - symbol
+        - action
+
+    WebhookResponse:
+      type: object
+      properties:
+        received:
+          type: boolean
+        signalId:
+          type: integer
+      required:
+        - received
+        - signalId
+
+    Signal:
+      type: object
+      properties:
+        id:
+          type: integer
+        symbol:
+          type: string
+        action:
+          type: string
+          enum: [BUY, SELL]
+        price:
+          type: number
+          nullable: true
+        processed:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - symbol
+        - action
+        - processed
+        - createdAt
+
+    SignalListResponse:
+      type: object
+      properties:
+        signals:
+          type: array
+          items:
+            $ref: "#/components/schemas/Signal"
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+      required:
+        - signals
+        - total
+        - limit
+        - offset
+
+    LatestSignalResponse:
+      type: object
+      properties:
+        signal:
+          $ref: "#/components/schemas/Signal"
+          nullable: true
+      required:
+        - signal
+
+    Symbol:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        xmUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - xmUrl
+        - createdAt
+
+    CreateSymbolRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        xmUrl:
+          type: string
+      required:
+        - name
+        - xmUrl
+
+    DeleteResponse:
+      type: object
+      properties:
+        deleted:
+          type: boolean
+      required:
+        - deleted
+
+    Settings:
+      type: object
+      properties:
+        id:
+          type: integer
+        tpAmount:
+          type: number
+          description: Take profit in USD
+        slAmount:
+          type: number
+          description: Stop loss in USD
+        automationEnabled:
+          type: boolean
+      required:
+        - id
+        - tpAmount
+        - slAmount
+        - automationEnabled
+
+    UpdateSettingsRequest:
+      type: object
+      properties:
+        tpAmount:
+          type: number
+        slAmount:
+          type: number
+        automationEnabled:
+          type: boolean
