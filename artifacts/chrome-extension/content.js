@@ -453,7 +453,54 @@
     return { tpSet, slSet };
   }
 
-  // ---- BUY/SELL Button Finding ----
+  // ---- BUY/SELL Side Button (top of panel) ----
+  // These are the SELL / BUY price buttons at the top — clicking them sets the order side.
+  // This is Step 1; "Place Order at X" is the final submit (Step 4).
+
+  function findSideButton(action) {
+    const terms = action === 'BUY' ? ['BUY', 'LONG'] : ['SELL', 'SHORT'];
+
+    // Strategy 1: ion-button or button whose text starts with BUY/SELL (price included: "BUY\n2,101.65")
+    const allBtns = deepQueryAll('button, ion-button, [role="button"]');
+    for (const btn of allBtns) {
+      const text = String(btn.textContent).trim().toUpperCase();
+      if (terms.some(t => text === t || text.startsWith(t + ' ') || text.startsWith(t + '\n'))) {
+        return btn;
+      }
+    }
+
+    // Strategy 2: class/data attribute patterns
+    const actionLower = action.toLowerCase();
+    const byClass = deepQuery(
+      `[class*="side-${actionLower}"], [class*="${actionLower}-price"], [class*="${actionLower}Price"],` +
+      `[data-side="${actionLower}"], [data-action="${actionLower}"]`
+    );
+    if (byClass) return byClass;
+
+    // Strategy 3: aria-label
+    return deepQuery(`[aria-label*="${action}" i]`);
+  }
+
+  // ---- Place Order Submit Button ----
+  // "Place Order at X.XX" button at the bottom of the form — final submit with TP/SL.
+
+  function findPlaceOrderButton() {
+    const allBtns = deepQueryAll('button, ion-button, [role="button"], div[class], span[class], a');
+    const isDisabled = (el) => {
+      if (el.disabled) return true;
+      if (el.getAttribute('aria-disabled') === 'true') return true;
+      const cls = (el.className || '').toString().toLowerCase();
+      return cls.includes('disabled') || cls.includes('is-disabled');
+    };
+    const btn = allBtns.find((el) => {
+      if (isDisabled(el)) return false;
+      const text = String(el.textContent).trim().toUpperCase();
+      return text.startsWith('PLACE ORDER') || text.startsWith('CONFIRM ORDER');
+    });
+    return btn || null;
+  }
+
+  // ---- BUY/SELL Button Finding (legacy — kept for fallback) ----
   // XM has two ways to place an order:
   //   A) "Place Order at X" green button (bottom of form) — includes TP/SL, PREFERRED
   //   B) One-Click BUY/SELL price button (top of panel) — immediate, no TP/SL form
@@ -543,77 +590,66 @@
   }
 
   // ---- Main Trade Execution ----
-  // Each attempt retries ALL prerequisite steps (toggle enabling, TP/SL setting, button click)
-  // so that lazy-rendered DOM elements are handled correctly across retries.
+  // Correct XM flow (confirmed from UI):
+  //   1. Click BUY or SELL price button (top of panel) — sets order side
+  //   2. Enable TP/SL toggle
+  //   3. Switch to Amount tab, set TP = +amount, SL = -amount (XM uses negative for SL)
+  //   4. Click "Place Order at X.XX" (bottom green/red button)
+  // Note: "One Click Order" must NOT be enabled — it bypasses the form and TP/SL.
 
   async function executeTrade(action, tpAmount, slAmount) {
     createOverlay(action, tpAmount, slAmount);
 
-    // Each attempt performs all required steps end-to-end:
-    // 1. Enable toggles  2. Set TP/SL inputs  3. Click action button
-    // This ensures any step that failed due to lazy DOM rendering is retried.
+    // XM Amount mode: TP is positive, SL is NEGATIVE (e.g. TP=2, SL=-2)
+    const slValue = -Math.abs(slAmount);
+
     const attempt = async (attemptNum) => {
       setStatus(attemptNum === 0 ? 'Scanning page...' : `Retry ${attemptNum}/20...`);
 
-      // Fast bail: if this frame has almost no DOM elements it's not the trading panel frame.
-      // Give up to 2 attempts for lazy-render, then bail — prevents wasting 10s per wrong frame.
+      // Fast bail: frames with almost no DOM are not the trading panel (e.g. blank micro-FE iframes)
       if (attemptNum >= 2) {
         const totalEls = document.querySelectorAll('*').length;
         if (totalEls < 10) {
-          console.warn('[AlgoX][' + frameLabel + '] DOM has only', totalEls, 'elements — not the trading panel frame, bailing');
+          console.warn('[AlgoX][' + frameLabel + '] Only', totalEls, 'DOM elements — wrong frame, bailing');
           return 'empty_dom';
         }
       }
 
-      // Step 1: Enable "One Click Order" toggle (XM requirement)
-      const oneClickStatus = await enableToggleByLabel('One Click Order');
+      // ── Step 1: Click the BUY or SELL price button (top of panel) ──────────────
+      const sideBtn = findSideButton(action);
+      if (!sideBtn) {
+        setStatus(`Looking for ${action} button...`);
+        return false; // DOM not ready — retry
+      }
+      setStatus(`Clicking ${action}...`);
+      dispatchClick(sideBtn);
+      await delay(500); // wait for the form to reflect the selected side
 
-      // Step 2: Enable TP/SL toggle (XM requirement)
+      // ── Step 2: Enable TP/SL toggle if it's off ─────────────────────────────────
       const tpSlStatus = await enableToggleByLabel('TP/SL');
+      console.log('[AlgoX] TP/SL toggle status:', tpSlStatus);
+      await delay(300);
 
-      // If nothing from the trading panel has rendered yet, keep waiting
-      if (oneClickStatus === 'not_found' && tpSlStatus === 'not_found') {
-        return false; // DOM not ready yet — retry
-      }
-
-      // Step 3: Set TP/SL input values (async — clicks "Amount" tab and waits for re-render)
-      const { tpSet, slSet } = await findAndSetTpSl(tpAmount, slAmount);
-
-      // Policy: if TP/SL toggle was found but inputs are absent or values not set,
-      // log a warning and skip this attempt — don't place an unprotected order.
-      if (tpSlStatus !== 'not_found' && !tpSet && !slSet) {
-        setStatus('Waiting for TP/SL inputs...');
-        return false;
-      }
+      // ── Step 3: Switch to Amount tab and fill TP / SL values ────────────────────
+      const { tpSet, slSet } = await findAndSetTpSl(tpAmount, slValue);
+      console.log('[AlgoX] TP set:', tpSet, 'SL set:', slSet, '(SL value used:', slValue, ')');
 
       if (tpSet || slSet) {
-        setStatus(`TP=$${tpAmount} SL=$${slAmount} set`);
-        await delay(150);
+        setStatus(`TP=$${tpAmount} SL=${slValue} set`);
+        await delay(300);
       }
 
-      // Step 4: Find and click the BUY or SELL button
-      const btn = findActionButton(action);
-      if (!btn) {
-        setStatus(`Looking for ${action} button...`);
-        return false;
+      // ── Step 4: Click "Place Order at X.XX" ─────────────────────────────────────
+      const placeBtn = findPlaceOrderButton();
+      if (!placeBtn) {
+        setStatus('Waiting for Place Order button...');
+        return false; // button may be disabled until TP/SL validates — retry
       }
-
-      setStatus(`Clicking ${action}...`);
-      try { btn.focus(); } catch (_) {}
-      dispatchClick(btn);
+      setStatus('Placing order...');
+      dispatchClick(placeBtn);
       await delay(600);
 
-      // Auto-confirm any confirmation dialog that may appear
-      const confirmBtns = deepQueryAll('button, [role="button"]').filter((b) => {
-        const text = b.textContent.trim().toUpperCase();
-        return ['CONFIRM', 'OK', 'YES', 'PLACE ORDER', 'SUBMIT'].includes(text);
-      });
-      if (confirmBtns.length > 0) {
-        dispatchClick(confirmBtns[0]);
-        setStatus('Order confirmed!');
-      } else {
-        setStatus(`${action} order placed!`);
-      }
+      setStatus(`${action} order placed! TP=$${tpAmount} SL=${slValue}`);
       return true;
     };
 
