@@ -184,62 +184,9 @@
     input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: String(value) }));
   }
 
-  // Find all elements whose DIRECT text exactly matches target (case-insensitive).
-  // "Direct text" = the element's own text nodes, ignoring child element text.
-  function findByDirectText(target) {
-    const UP = target.toUpperCase();
-    const candidates = deepQueryAll('*');
-    return candidates.filter((el) => {
-      // Sum up only direct text nodes (skip child elements)
-      let direct = '';
-      el.childNodes.forEach((node) => {
-        if (node.nodeType === Node.TEXT_NODE) direct += node.nodeValue;
-      });
-      return direct.trim().toUpperCase() === UP;
-    });
-  }
+  // ---- Click helpers ----
 
-  // Find the Price/Amount tab PAIR — they must be siblings or share a grandparent.
-  // This avoids false positives where "Amount" appears elsewhere on the page.
-  function findTpSlTabPair() {
-    const priceEls  = findByDirectText('Price');
-    const amountEls = findByDirectText('Amount');
-
-    // Try sibling pairs first (most accurate)
-    for (const p of priceEls) {
-      for (const a of amountEls) {
-        if (p.parentElement && p.parentElement === a.parentElement) return { priceEl: p, amountEl: a };
-      }
-    }
-    // Grandparent level
-    for (const p of priceEls) {
-      for (const a of amountEls) {
-        if (p.parentElement?.parentElement && p.parentElement.parentElement === a.parentElement?.parentElement) {
-          return { priceEl: p, amountEl: a };
-        }
-      }
-    }
-    // Last resort: first found
-    return { priceEl: priceEls[0] || null, amountEl: amountEls[0] || null };
-  }
-
-  function findByExactText(target) {
-    const { priceEl, amountEl } = findTpSlTabPair();
-    return target.toUpperCase() === 'AMOUNT' ? amountEl : priceEl;
-  }
-
-  // Get the best clickable element inside a container (handles Angular Material inner <button>).
-  function getClickTarget(el) {
-    if (!el) return null;
-    // If the element IS a button/input/label — click it directly
-    if (['BUTTON', 'INPUT', 'LABEL', 'A'].includes(el.tagName)) return el;
-    // Look for a button or input inside (Angular Material wraps content in a <button>)
-    const inner = el.querySelector('button') || el.querySelector('input[type="button"]')
-                || el.querySelector('label') || el.querySelector('a');
-    return inner || el;
-  }
-
-  // Multi-strategy click: native .click() + pointer events + mouse events.
+  // Multi-strategy click dispatcher (works on regular DOM + Ionic web components).
   function fireClickOn(target) {
     if (!target) return;
     try { target.focus(); } catch (_) {}
@@ -255,176 +202,237 @@
 
   function aggressiveClick(el) {
     if (!el) return;
-    // Click the best inner target (button inside mat-button-toggle, etc.)
-    const target = getClickTarget(el);
-    fireClickOn(target);
-
-    // Also walk UP to the nearest button/anchor ancestor and click that too
-    // (handles cases where el is an inner <span> and the handler is on a parent <button>)
-    if (target === el || target.tagName !== 'BUTTON') {
-      let ancestor = el.parentElement;
-      let depth = 0;
-      while (ancestor && depth < 5) {
-        if (['BUTTON', 'A', 'LI'].includes(ancestor.tagName) ||
-            ancestor.getAttribute('role') === 'button' ||
-            ancestor.getAttribute('role') === 'tab') {
-          fireClickOn(ancestor);
-          break;
-        }
-        ancestor = ancestor.parentElement;
-        depth++;
+    fireClickOn(el);
+    // Also walk UP to nearest clickable ancestor (handles inner span/label cases)
+    let ancestor = el.parentElement;
+    let depth = 0;
+    while (ancestor && depth < 6) {
+      const tag = ancestor.tagName;
+      const role = ancestor.getAttribute('role') || '';
+      if (['BUTTON', 'A'].includes(tag) || role === 'button' || role === 'tab' ||
+          ancestor.tagName.startsWith('ION-') || ancestor.tagName.startsWith('XM-')) {
+        fireClickOn(ancestor);
+        break;
       }
+      ancestor = ancestor.parentElement;
+      depth++;
     }
   }
 
-  // Check if Amount tab is currently selected by comparing Amount vs Price tab state.
-  function isAmountTabActive() {
-    const amountEl = findByExactText('Amount');
-    const priceEl  = findByExactText('Price');
-    if (!amountEl) return false;
+  function dispatchClick(el) { aggressiveClick(el); }
 
-    // ARIA selected/checked (most reliable)
-    if (amountEl.getAttribute('aria-selected') === 'true') return true;
-    if (amountEl.getAttribute('aria-checked') === 'true') return true;
-    if (priceEl && priceEl.getAttribute('aria-selected') === 'true') return false;
-    if (priceEl && priceEl.getAttribute('aria-pressed') === 'true') return false;
-    if (amountEl.getAttribute('aria-pressed') === 'true') return true;
+  // ---- Diagnostic dump (runs once at start of each trade) ----
+  function diagnosticDump() {
+    // 1. ion-segment elements (Ionic tab groups — TP/SL type selector is one of these)
+    const segs = deepQueryAll('ion-segment');
+    console.log('[AlgoX DIAG] ion-segment count:', segs.length,
+      segs.map(s => ({ val: s.value ?? s.getAttribute('value'), cls: String(s.className).substring(0, 60) })));
 
-    // CSS class comparison (active, selected, checked, current)
-    const activeKw = ['active', 'selected', 'current', 'checked', '-on', 'open', 'focused'];
-    const aCls = (amountEl.className || '').toString().toLowerCase();
-    const pCls = priceEl ? (priceEl.className || '').toString().toLowerCase() : '';
-    const aScore = activeKw.filter((k) => aCls.includes(k)).length;
-    const pScore = activeKw.filter((k) => pCls.includes(k)).length;
-    if (aScore > pScore) return true;
-    if (pScore > aScore) return false;
+    // 2. ion-segment-button elements (the actual tab buttons inside ion-segment)
+    const segBtns = deepQueryAll('ion-segment-button');
+    console.log('[AlgoX DIAG] ion-segment-button count:', segBtns.length,
+      segBtns.map(b => ({ val: b.value ?? b.getAttribute('value'), txt: String(b.textContent).trim().substring(0, 30), cls: String(b.className).substring(0, 60) })));
 
-    // Check computed color — active tab usually has different text/bg color
-    try {
-      const aColor = window.getComputedStyle(amountEl).color;
-      const pColor = window.getComputedStyle(priceEl || amountEl).color;
-      // If colors differ and we can detect which one is "highlighted" (lighter), assume it
-      // This is a last-resort heuristic — we assume white/brighter = active on dark XM theme
-      const brightness = (cssColor) => {
-        const m = cssColor.match(/[\d.]+/g);
-        return m ? (parseInt(m[0]) * 299 + parseInt(m[1]) * 587 + parseInt(m[2]) * 114) / 1000 : 0;
-      };
-      if (priceEl && aColor !== pColor) return brightness(aColor) > brightness(pColor);
-    } catch (_) {}
+    // 3. All role=tab elements
+    const tabs = deepQueryAll('[role="tab"]');
+    console.log('[AlgoX DIAG] role=tab count:', tabs.length,
+      tabs.map(t => ({ txt: String(t.textContent).trim().substring(0, 30), cls: String(t.className).substring(0, 60) })));
 
-    return false; // can't determine — assume not active (will click)
+    // 4. ALL inputs (including inside shadow DOM)
+    const inputs = deepQueryAll('input');
+    console.log('[AlgoX DIAG] input count:', inputs.length,
+      inputs.map(i => ({ type: i.type, ph: i.placeholder, nm: i.name, id: i.id, cls: String(i.className).substring(0, 40), vis: i.offsetParent !== null })));
+
+    // 5. ion-input / xm-ion-input wrappers
+    const ionInputs = deepQueryAll('ion-input, xm-ion-input');
+    console.log('[AlgoX DIAG] ion-input/xm-ion-input count:', ionInputs.length,
+      ionInputs.map(i => ({ tag: i.tagName, label: String(i.label ?? i.getAttribute('label') ?? ''), cls: String(i.className).substring(0, 60) })));
   }
 
-  // Switch to Amount tab, retrying up to 3 times if detection is uncertain.
+  // ---- Amount Tab Detection & Switching ----
+  // XM uses Ionic's ion-segment/ion-segment-button for the Price vs Amount TP/SL toggle.
+
+  function findAmountTabButton() {
+    // Strategy 1: ion-segment-button with value="amount" (most reliable)
+    const byVal = deepQuery('ion-segment-button[value="amount"], ion-segment-button[value="AMOUNT"]');
+    if (byVal) return byVal;
+
+    // Strategy 2: any ion-segment-button whose text is "Amount"
+    const allSegBtns = deepQueryAll('ion-segment-button');
+    const byText = allSegBtns.find(b => String(b.textContent).trim().toUpperCase() === 'AMOUNT');
+    if (byText) return byText;
+
+    // Strategy 3: role="tab" with text "Amount"
+    const tabs = deepQueryAll('[role="tab"]');
+    const tabByText = tabs.find(t => String(t.textContent).trim().toUpperCase() === 'AMOUNT');
+    if (tabByText) return tabByText;
+
+    // Strategy 4: any button (not floating-label span) whose text is exactly "Amount"
+    const buttons = deepQueryAll('button');
+    const btnByText = buttons.find(b => String(b.textContent).trim().toUpperCase() === 'AMOUNT');
+    if (btnByText) return btnByText;
+
+    return null;
+  }
+
+  function isAmountTabActive() {
+    // Check ion-segment.value === "amount" — most reliable for Ionic
+    const segs = deepQueryAll('ion-segment');
+    for (const seg of segs) {
+      const val = (seg.value ?? seg.getAttribute('value') ?? '').toLowerCase();
+      if (val === 'amount') return true;
+      if (val === 'price')  return false;
+    }
+
+    // Check ion-segment-button active class (Ionic adds "segment-button-checked")
+    const amountBtn = findAmountTabButton();
+    if (!amountBtn) return false;
+    const cls = String(amountBtn.className).toLowerCase();
+    if (cls.includes('segment-button-checked') || cls.includes('active') || cls.includes('selected')) return true;
+    if (amountBtn.getAttribute('aria-selected') === 'true') return true;
+    if (amountBtn.getAttribute('aria-checked') === 'true') return true;
+
+    return false;
+  }
+
   async function ensureAmountTabActive() {
+    // Run diagnostics first so logs are available for debugging
+    diagnosticDump();
+
     for (let attempt = 0; attempt < 3; attempt++) {
-      if (isAmountTabActive()) return true;
-      const amountEl = findByExactText('Amount');
-      if (!amountEl) {
-        console.warn('[AlgoX] Amount tab not found in DOM');
-        await delay(500);
+      if (isAmountTabActive()) {
+        console.log('[AlgoX] Amount tab already active');
+        return true;
+      }
+      const btn = findAmountTabButton();
+      if (!btn) {
+        console.log('[AlgoX] Amount tab button not found in DOM (attempt', attempt + 1, ')');
+        await delay(600);
         continue;
       }
-      console.log('[AlgoX] Clicking Amount tab (attempt', attempt + 1, '), el:', amountEl.tagName, amountEl.className);
-      aggressiveClick(amountEl);
-      await delay(1000); // wait for Angular re-render
+      console.log('[AlgoX] Clicking Amount tab (attempt', attempt + 1, '), el:', btn.tagName, String(btn.className).substring(0, 60));
+      // For ion-segment-button: click the element itself (Ionic handles the rest)
+      fireClickOn(btn);
+      await delay(800);
     }
-    // Last check — proceed regardless (we tried 3 times)
     const active = isAmountTabActive();
     console.log('[AlgoX] Amount tab active after attempts:', active);
     return active;
   }
 
+  // ---- TP/SL Input Finding ----
+  // XM wraps inputs in ion-input/xm-ion-input Ionic components.
+  // The real <input> is inside their shadow DOM.
+
+  function getInnerInput(ionInputEl) {
+    // Try shadow root first
+    if (ionInputEl.shadowRoot) {
+      const inp = ionInputEl.shadowRoot.querySelector('input');
+      if (inp) return inp;
+    }
+    // Try regular child
+    return ionInputEl.querySelector('input') || null;
+  }
+
+  function labelTextNear(el) {
+    // Walk UP to find a label element (ion-label, xm-ion-label, label) within 8 levels
+    let node = el;
+    for (let d = 0; d < 8 && node; d++) {
+      const labelEl = node.querySelector
+        ? (node.querySelector('ion-label, xm-ion-label, label, [class*="label"]'))
+        : null;
+      if (labelEl) return String(labelEl.textContent).trim().toUpperCase();
+      node = node.parentElement;
+    }
+    return '';
+  }
+
   async function findAndSetTpSl(tpAmount, slAmount) {
-    // 1. Switch to Amount tab — MUST happen before any input search
+    // 1. Switch to Amount tab first
     await ensureAmountTabActive();
-
-    // 2. Allow Angular to fully render Amount inputs (extra safety margin)
-    await delay(400);
-
-    // 3. Patterns for Amount-mode inputs (prefer "amount" in placeholder/name)
-    const tpAmountPatterns = [
-      'input[placeholder*="take profit amount" i]',
-      'input[placeholder*="profit amount" i]',
-      'input[placeholder*="tp amount" i]',
-      'input[placeholder*="take profit" i]',
-      'input[placeholder*="profit" i]',
-      'input[placeholder*="tp" i]',
-      'input[name*="takeprofit" i]', 'input[name*="take_profit" i]',
-      'input[name*="tp" i]', 'input[name*="profit" i]',
-      'input[id*="takeprofit" i]', 'input[id*="profit" i]',
-      '[class*="takeProfit"] input', '[class*="take-profit"] input',
-    ];
-    const slAmountPatterns = [
-      'input[placeholder*="stop loss amount" i]',
-      'input[placeholder*="loss amount" i]',
-      'input[placeholder*="sl amount" i]',
-      'input[placeholder*="stop loss" i]',
-      'input[placeholder*="loss" i]',
-      'input[placeholder*="sl" i]',
-      'input[name*="stoploss" i]', 'input[name*="stop_loss" i]',
-      'input[name*="sl" i]', 'input[name*="loss" i]',
-      'input[id*="stoploss" i]', 'input[id*="loss" i]',
-      '[class*="stopLoss"] input', '[class*="stop-loss"] input',
-    ];
+    await delay(500);
 
     let tpSet = false;
     let slSet = false;
 
-    for (const pattern of tpAmountPatterns) {
-      const el = deepQuery(pattern);
-      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
-        setInputValue(el, tpAmount);
-        tpSet = true;
-        break;
+    // 2. Try placeholder/name/id selector patterns on ALL inputs (incl. shadow DOM)
+    const tpPatterns = [
+      'input[placeholder*="take profit" i]', 'input[placeholder*="profit" i]',
+      'input[name*="takeprofit" i]', 'input[name*="take_profit" i]', 'input[name*="profit" i]',
+      'input[id*="takeprofit" i]', 'input[id*="profit" i]',
+    ];
+    const slPatterns = [
+      'input[placeholder*="stop loss" i]', 'input[placeholder*="loss" i]',
+      'input[name*="stoploss" i]', 'input[name*="stop_loss" i]', 'input[name*="loss" i]',
+      'input[id*="stoploss" i]', 'input[id*="loss" i]',
+    ];
+
+    for (const p of tpPatterns) {
+      const el = deepQuery(p);
+      if (el) { setInputValue(el, tpAmount); tpSet = true; break; }
+    }
+    for (const p of slPatterns) {
+      const el = deepQuery(p);
+      if (el) { setInputValue(el, slAmount); slSet = true; break; }
+    }
+
+    // 3. Walk ion-input / xm-ion-input elements and match by label text
+    if (!tpSet || !slSet) {
+      const ionInputWrappers = deepQueryAll('ion-input, xm-ion-input');
+      console.log('[AlgoX] Scanning', ionInputWrappers.length, 'ion-input/xm-ion-input wrappers for TP/SL');
+      for (const wrapper of ionInputWrappers) {
+        const inner = getInnerInput(wrapper);
+        if (!inner || inner.readOnly || inner.disabled) continue;
+        const label = labelTextNear(wrapper);
+        console.log('[AlgoX] ion-input label:', label, 'input type:', inner.type, 'ph:', inner.placeholder);
+        if (!tpSet && (label.includes('TAKE PROFIT') || label.includes('PROFIT') || label.includes('TP'))) {
+          setInputValue(inner, tpAmount); tpSet = true;
+        } else if (!slSet && (label.includes('STOP LOSS') || label.includes('LOSS') || label.includes('SL'))) {
+          setInputValue(inner, slAmount); slSet = true;
+        }
       }
     }
 
-    for (const pattern of slAmountPatterns) {
-      const el = deepQuery(pattern);
-      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
-        setInputValue(el, slAmount);
-        slSet = true;
-        break;
-      }
-    }
-
-    // 4. Fallback: look for inputs near TP/SL text labels
+    // 4. Text node walk near TP/SL keywords
     if (!tpSet || !slSet) {
       const textNodes = deepTextWalker(document.body);
       for (const node of textNodes) {
-        const val = (node.nodeValue || '').trim().toUpperCase();
+        const val = String(node.nodeValue).trim().toUpperCase();
         if (!tpSet && (val.includes('TAKE PROFIT') || val.includes('PROFIT AMOUNT') || val === 'TP')) {
           let el = node.parentElement;
-          for (let d = 0; d < 6 && el; d++) {
-            const inp = el.querySelector('input');
-            if (inp) { setInputValue(inp, tpAmount); tpSet = true; break; }
+          for (let d = 0; d < 8 && el; d++) {
+            const inp = el.querySelector('input') ||
+                        (el.shadowRoot && el.shadowRoot.querySelector('input'));
+            if (inp && !inp.readOnly && !inp.disabled) {
+              setInputValue(inp, tpAmount); tpSet = true; break;
+            }
             el = el.parentElement;
           }
         }
         if (!slSet && (val.includes('STOP LOSS') || val.includes('LOSS AMOUNT') || val === 'SL')) {
           let el = node.parentElement;
-          for (let d = 0; d < 6 && el; d++) {
-            const inp = el.querySelector('input');
-            if (inp) { setInputValue(inp, slAmount); slSet = true; break; }
+          for (let d = 0; d < 8 && el; d++) {
+            const inp = el.querySelector('input') ||
+                        (el.shadowRoot && el.shadowRoot.querySelector('input'));
+            if (inp && !inp.readOnly && !inp.disabled) {
+              setInputValue(inp, slAmount); slSet = true; break;
+            }
             el = el.parentElement;
           }
         }
       }
     }
 
-    // 5. Last resort: find any two numeric/text inputs in the trading panel
-    //    (first = TP, second = SL — XM always shows TP before SL)
+    // 5. Last resort: use last two visible inputs (TP before SL in XM's form order)
     if (!tpSet && !slSet) {
       const allInputs = deepQueryAll('input[type="text"], input[type="number"], input:not([type])')
-        .filter((el) => !el.readOnly && !el.disabled && el.offsetParent !== null);
-      // Skip quantity/lots inputs (usually first in the form, before TP/SL)
-      // TP and SL inputs tend to appear in the lower part — take the last two visible inputs
+        .filter(el => !el.readOnly && !el.disabled);
+      console.log('[AlgoX] Last resort: found', allInputs.length, 'inputs');
+      allInputs.forEach((inp, i) => console.log(`  [${i}]`, inp.placeholder, inp.name, inp.id, 'vis:', inp.offsetParent !== null));
       if (allInputs.length >= 2) {
         setInputValue(allInputs[allInputs.length - 2], tpAmount);
         setInputValue(allInputs[allInputs.length - 1], slAmount);
-        tpSet = true;
-        slSet = true;
+        tpSet = true; slSet = true;
       }
     }
 

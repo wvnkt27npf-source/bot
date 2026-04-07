@@ -1,0 +1,423 @@
+ETHUSD#:34 [ Federation Runtime ] Version 0.0.0 from host of shared singleton module @ionic/core/components does not satisfy the requirement of host which needs 8.7.12)
+nrWrapper @ ETHUSD#:34
+ETHUSD#:34 THIS VAULT DOES NOT IMPLEMENT SECURE STORAGE IN THE BROWSER AND IS NOT INTENDED FOR PRODUCTION USE. It only exists as a way to run browser-compatible code in place of Identity Vault. Browsers do not have a secure storage element same as native devices. This class is intended to be used to enable running your application in the browser while simulating the functions of Identity Vault using sessionStorage.
+nrWrapper @ ETHUSD#:34
+content.js:631 [AlgoX] Content script loaded on https://my.xm.com/symbol-info/ETHUSD%23
+ETHUSD#:34 [LaunchDarkly] LaunchDarkly client initialized
+64493.3be7cf40c55f3517.js:1 host
+ETHUSD#:1 Notifications permission has been blocked as the user has dismissed the permission prompt several times. This can be reset in Page Info which can be accessed by clicking the tune icon next to the URL. See https://www.chromestatus.com/feature/6443143280984064 for more information.
+ETHUSD#:34 [ Federation Runtime ] Version 29.4.0 from host of shared singleton module @xm/trading-view-new does not satisfy the requirement of host which needs npm:@xm/trading-view@29.4.0)
+nrWrapper @ ETHUSD#:34
+83460.6f3487b953241755.js:1 funding
+83460.6f3487b953241755.js:1 ai
+83460.6f3487b953241755.js:1 copytrading
+83460.6f3487b953241755.js:1 research
+83460.6f3487b953241755.js:1 competitions
+styles.css:1  Failed to load resource: the server responded with a status of 404 ()
+ETHUSD#:34 [ Federation Runtime ] Version 28.1.0 from host of shared singleton module @xm/trading-view does not satisfy the requirement of research which needs 29.4.0)
+nrWrapper @ ETHUSD#:34
+ETHUSD#:34 Loaded Moloco Pixel - Pixel ID: nxt-nvedmoVg
+library.529d5b8c7f545237e54b.js:914 2026-04-07T06:45:47.229Z:Property:The state with a data type: unknown does not match a schema
+w @ library.529d5b8c7f545237e54b.js:914
+content.js:70 [AlgoX] Scanning page...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 1/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 2/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+analytics.tiktok.com/i18n/pixel/events.js?sdkid=CD7TT6JC77U9FFTD07M0&lib=ttq:1  Failed to load resource: net::ERR_CONNECTION_TIMED_OUT
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 3/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+gum.criteo.com/sync?c=9&r=1&a=1&u=https%3A%2F%2Faa.agkn.com%2Fadscores%2Fg.pixel%3Fsid%3D9212273938%26ct%3D%40USERID%40:1  Failed to load resource: net::ERR_CONNECTION_TIMED_OUT
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 4/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 5/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 6/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 7/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 8/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 9/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 10/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 11/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 12/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 13/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 14/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 15/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+styles.css:1  Failed to load resource: the server responded with a status of 404 ()
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 16/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 17/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 18/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 19/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 20/20...
+content.js:328 [AlgoX] Clicking Amount tab (attempt 1 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 2 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:328 [AlgoX] Clicking Amount tab (attempt 3 ), el: SPAN xm-ion-label xm-ion-floating-label
+content.js:334 [AlgoX] Amount tab active after attempts: false
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Manual: Place SELL order
+TP: $2 | SL: $2
+content.js:612 [AlgoX] button_not_found — DOM dump (first 50 short elements): [
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg active ng-star-inserted",
+    "text": "Popular"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "Forex"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "Stocks CFDs"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "Equity Indices"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "Thematic Indices"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "Commodities"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "Cryptocurrencies"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "Top Gainers"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "Top Losers"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "My Watchlist"
+  },
+  {
+    "tag": "DIV",
+    "cls": "ng-star-inserted",
+    "text": "⁦GOLD.i#⁩ 4,649.41 GOLD-0.02%"
+  },
+  {
+    "tag": "DIV",
+    "cls": "grid grid-cols-[1fr_auto] grid-rows-[1fr_auto] gap-x-1 me-0 text-text-1000",
+    "text": "⁦GOLD.i#⁩ 4,649.41 GOLD-0.02%"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md truncate item-title",
+    "text": "⁦GOLD.i#⁩"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md text-end ng-star-inserted",
+    "text": "4,649.41"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "text-end text-sm ng-star-inserted text-red-600",
+    "text": "-0.02%"
+  },
+  {
+    "tag": "DIV",
+    "cls": "ng-star-inserted",
+    "text": "⁦BTCUSD#⁩ 68,499.90 Bitcoin vs"
+  },
+  {
+    "tag": "DIV",
+    "cls": "grid grid-cols-[1fr_auto] grid-rows-[1fr_auto] gap-x-1 me-0 text-text-1000",
+    "text": "⁦BTCUSD#⁩ 68,499.90 Bitcoin vs"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md truncate item-title",
+    "text": "⁦BTCUSD#⁩"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md text-end ng-star-inserted",
+    "text": "68,499.90"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "text-end text-sm text-red-600 ng-star-inserted",
+    "text": "-1.89%"
+  },
+  {
+    "tag": "DIV",
+    "cls": "ng-star-inserted",
+    "text": "⁦USDJPY#⁩ 159.782 US Dollar vs"
+  },
+  {
+    "tag": "DIV",
+    "cls": "grid grid-cols-[1fr_auto] grid-rows-[1fr_auto] gap-x-1 me-0 text-text-1000",
+    "text": "⁦USDJPY#⁩ 159.782 US Dollar vs"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md truncate item-title",
+    "text": "⁦USDJPY#⁩"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md text-end ng-star-inserted",
+    "text": "159.782"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "text-end text-sm text-green-500 ng-star-inserted",
+    "text": "+0.07%"
+  },
+  {
+    "tag": "DIV",
+    "cls": "ng-star-inserted",
+    "text": "⁦EURUSD#⁩ 1.15410 Euro vs US D"
+  },
+  {
+    "tag": "DIV",
+    "cls": "grid grid-cols-[1fr_auto] grid-rows-[1fr_auto] gap-x-1 me-0 text-text-1000",
+    "text": "⁦EURUSD#⁩ 1.15410 Euro vs US D"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md truncate item-title",
+    "text": "⁦EURUSD#⁩"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md text-end ng-star-inserted",
+    "text": "1.15410"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "text-end text-sm ng-star-inserted text-text-500",
+    "text": "0.00%"
+  },
+  {
+    "tag": "DIV",
+    "cls": "ng-star-inserted",
+    "text": "⁦US100Cash#⁩ 24,056.27 US 100 "
+  },
+  {
+    "tag": "DIV",
+    "cls": "grid grid-cols-[1fr_auto] grid-rows-[1fr_auto] gap-x-1 me-0 text-text-1000",
+    "text": "⁦US100Cash#⁩ 24,056.27 US 100 "
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md truncate item-title",
+    "text": "⁦US100Cash#⁩"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md text-end ng-star-inserted",
+    "text": "24,056.27"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "text-end text-sm text-red-600 ng-star-inserted",
+    "text": "-0.50%"
+  },
+  {
+    "tag": "DIV",
+    "cls": "ng-star-inserted",
+    "text": "⁦ETHUSD#⁩ 2,099.96 Ethereum vs"
+  },
+  {
+    "tag": "DIV",
+    "cls": "grid grid-cols-[1fr_auto] grid-rows-[1fr_auto] gap-x-1 me-0 text-text-1000",
+    "text": "⁦ETHUSD#⁩ 2,099.96 Ethereum vs"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md truncate item-title",
+    "text": "⁦ETHUSD#⁩"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md text-end ng-star-inserted",
+    "text": "2,099.96"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "text-end text-sm text-red-600 ng-star-inserted",
+    "text": "-2.21%"
+  },
+  {
+    "tag": "DIV",
+    "cls": "ng-star-inserted",
+    "text": "⁦JP225Cash#⁩ 53,427 Japan 225 "
+  },
+  {
+    "tag": "DIV",
+    "cls": "grid grid-cols-[1fr_auto] grid-rows-[1fr_auto] gap-x-1 me-0 text-text-1000",
+    "text": "⁦JP225Cash#⁩ 53,427 Japan 225 "
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md truncate item-title",
+    "text": "⁦JP225Cash#⁩"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md text-end ng-star-inserted",
+    "text": "53,427"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "text-end text-sm text-red-600 ng-star-inserted",
+    "text": "-0.84%"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md truncate item-title",
+    "text": "⁦GBPUSD#⁩"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md text-end ng-star-inserted",
+    "text": "1.32441"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "text-end text-sm text-green-500 ng-star-inserted",
+    "text": "+0.08%"
+  },
+  {
+    "tag": "DIV",
+    "cls": "ng-star-inserted",
+    "text": "⁦SILVER.i#⁩SILVER"
+  },
+  {
+    "tag": "DIV",
+    "cls": "grid grid-cols-[1fr_auto] grid-rows-[1fr_auto] gap-x-1 me-0 text-text-1000",
+    "text": "⁦SILVER.i#⁩SILVER"
+  }
+]
+executeTrade @ content.js:612
+setTimeout
+(anonymous) @ content.js:76
+delay @ content.js:76
+findAndSetTpSl @ content.js:343
+setTimeout
+(anonymous) @ content.js:76
+delay @ content.js:76
+ensureAmountTabActive @ content.js:330
+content.js:613 [AlgoX] Page URL: https://my.xm.com/symbol-info/ETHUSD%23
+executeTrade @ content.js:613
+setTimeout
+(anonymous) @ content.js:76
+delay @ content.js:76
+findAndSetTpSl @ content.js:343
+setTimeout
+(anonymous) @ content.js:76
+delay @ content.js:76
+ensureAmountTabActive @ content.js:330
