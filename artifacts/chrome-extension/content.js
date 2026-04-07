@@ -72,17 +72,6 @@
 
   // ---- DOM Helpers ----
 
-  function setInputValue(input, value) {
-    const nativeSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype,
-      'value'
-    ).set;
-    nativeSetter.call(input, String(value));
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-    input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
-  }
-
   function delay(ms) {
     return new Promise((r) => setTimeout(r, ms));
   }
@@ -184,47 +173,110 @@
     el.dispatchEvent(new MouseEvent('click',     { bubbles: true, cancelable: true }));
   }
 
-  function clickAmountTab() {
-    const allClickable = deepQueryAll('button, [role="button"], div[class], span[class], a, li');
-    // Find the "Amount" tab — must be exactly "Amount" or "AMOUNT", not a longer label
-    const amountTab = allClickable.find((el) => {
-      const text = el.textContent.trim().toUpperCase();
-      return text === 'AMOUNT';
+  // Set input value in a way Angular's ControlValueAccessor registers the change.
+  function setInputValue(input, value) {
+    const nativeSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype, 'value'
+    ).set;
+    input.focus();
+    input.select();
+    nativeSetter.call(input, String(value));
+    ['input', 'change', 'blur'].forEach((type) => {
+      input.dispatchEvent(new Event(type, { bubbles: true }));
     });
-    if (amountTab) {
-      dispatchClick(amountTab);
-      return true;
+    input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: String(value) }));
+  }
+
+  // Find the Amount tab (exact text match) and click it.
+  function findAmountTab() {
+    const candidates = deepQueryAll('button, [role="button"], [role="tab"], div[class], span[class], li, a');
+    return candidates.find((el) => {
+      // Direct text exactly "Amount" (case-insensitive), NOT "amounts" or "take profit amount"
+      const t = el.textContent.trim().toUpperCase();
+      return t === 'AMOUNT';
+    }) || null;
+  }
+
+  // Check if Amount tab is currently selected by looking at classes/ARIA.
+  // We compare Amount vs Price tab — whichever looks "more active" wins.
+  function isAmountTabActive() {
+    const candidates = deepQueryAll('button, [role="button"], [role="tab"], div[class], span[class], li, a');
+    let amountTab = null;
+    let priceTab = null;
+    for (const el of candidates) {
+      const t = el.textContent.trim().toUpperCase();
+      if (t === 'AMOUNT') amountTab = el;
+      if (t === 'PRICE') priceTab = el;
     }
+    if (!amountTab) return false;
+
+    // Check ARIA attributes first (most reliable)
+    if (amountTab.getAttribute('aria-selected') === 'true') return true;
+    if (amountTab.getAttribute('aria-checked') === 'true') return true;
+    if (priceTab && priceTab.getAttribute('aria-selected') === 'true') return false;
+
+    // Compare CSS classes: look for "active", "selected", etc.
+    const amountCls = (amountTab.className || '').toString().toLowerCase();
+    const priceCls = priceTab ? (priceTab.className || '').toString().toLowerCase() : '';
+    const activeKeywords = ['active', 'selected', 'current', 'checked', '-on', 'open'];
+    const amountScore = activeKeywords.filter((k) => amountCls.includes(k)).length;
+    const priceScore = activeKeywords.filter((k) => priceCls.includes(k)).length;
+    if (amountScore > priceScore) return true;
+    if (priceScore > amountScore) return false;
+
+    // Neither has a clear winner — assume not active (will click Amount)
     return false;
   }
 
-  async function findAndSetTpSl(tpAmount, slAmount) {
-    // Ensure "Amount" tab is selected before setting values; wait for Angular re-render
-    const switched = clickAmountTab();
-    if (switched) await delay(500);
+  // Click Amount tab and wait for Angular to re-render the Amount inputs.
+  async function ensureAmountTabActive() {
+    // Skip click if already active (saves ~1s on retry attempts)
+    if (isAmountTabActive()) return true;
+    const tab = findAmountTab();
+    if (tab) {
+      dispatchClick(tab);
+      await delay(1000); // Angular needs ~700-1000ms to swap TP/SL inputs
+    }
+    return isAmountTabActive(); // may still be false if class detection fails, but we clicked
+  }
 
-    // Search includes shadow DOM
-    const tpPatterns = [
-      'input[placeholder*="take profit" i]', 'input[placeholder*="profit" i]',
+  async function findAndSetTpSl(tpAmount, slAmount) {
+    // 1. Switch to Amount tab — MUST happen before any input search
+    await ensureAmountTabActive();
+
+    // 2. Allow Angular to fully render Amount inputs (extra safety margin)
+    await delay(400);
+
+    // 3. Patterns for Amount-mode inputs (prefer "amount" in placeholder/name)
+    const tpAmountPatterns = [
+      'input[placeholder*="take profit amount" i]',
+      'input[placeholder*="profit amount" i]',
+      'input[placeholder*="tp amount" i]',
+      'input[placeholder*="take profit" i]',
+      'input[placeholder*="profit" i]',
       'input[placeholder*="tp" i]',
-      'input[name*="take" i]', 'input[name*="tp" i]', 'input[name*="profit" i]',
-      'input[id*="take" i]', 'input[id*="profit" i]',
+      'input[name*="takeprofit" i]', 'input[name*="take_profit" i]',
+      'input[name*="tp" i]', 'input[name*="profit" i]',
+      'input[id*="takeprofit" i]', 'input[id*="profit" i]',
       '[class*="takeProfit"] input', '[class*="take-profit"] input',
-      '[class*="tp"] input'
     ];
-    const slPatterns = [
-      'input[placeholder*="stop loss" i]', 'input[placeholder*="loss" i]',
+    const slAmountPatterns = [
+      'input[placeholder*="stop loss amount" i]',
+      'input[placeholder*="loss amount" i]',
+      'input[placeholder*="sl amount" i]',
+      'input[placeholder*="stop loss" i]',
+      'input[placeholder*="loss" i]',
       'input[placeholder*="sl" i]',
-      'input[name*="stop" i]', 'input[name*="sl" i]', 'input[name*="loss" i]',
-      'input[id*="stop" i]', 'input[id*="loss" i]',
+      'input[name*="stoploss" i]', 'input[name*="stop_loss" i]',
+      'input[name*="sl" i]', 'input[name*="loss" i]',
+      'input[id*="stoploss" i]', 'input[id*="loss" i]',
       '[class*="stopLoss"] input', '[class*="stop-loss"] input',
-      '[class*="sl"] input'
     ];
 
     let tpSet = false;
     let slSet = false;
 
-    for (const pattern of tpPatterns) {
+    for (const pattern of tpAmountPatterns) {
       const el = deepQuery(pattern);
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
         setInputValue(el, tpAmount);
@@ -233,7 +285,7 @@
       }
     }
 
-    for (const pattern of slPatterns) {
+    for (const pattern of slAmountPatterns) {
       const el = deepQuery(pattern);
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
         setInputValue(el, slAmount);
@@ -242,28 +294,42 @@
       }
     }
 
-    // Fallback: find all visible inputs near TP/SL label text
+    // 4. Fallback: look for inputs near TP/SL text labels
     if (!tpSet || !slSet) {
-      const allInputs = deepQueryAll('input[type="text"], input[type="number"], input:not([type])');
       const textNodes = deepTextWalker(document.body);
       for (const node of textNodes) {
         const val = (node.nodeValue || '').trim().toUpperCase();
-        if (!tpSet && (val.includes('TAKE PROFIT') || val.includes('PROFIT AMOUNT') || val.includes('TP'))) {
+        if (!tpSet && (val.includes('TAKE PROFIT') || val.includes('PROFIT AMOUNT') || val === 'TP')) {
           let el = node.parentElement;
-          for (let d = 0; d < 5 && el; d++) {
+          for (let d = 0; d < 6 && el; d++) {
             const inp = el.querySelector('input');
             if (inp) { setInputValue(inp, tpAmount); tpSet = true; break; }
             el = el.parentElement;
           }
         }
-        if (!slSet && (val.includes('STOP LOSS') || val.includes('LOSS AMOUNT') || val.includes('SL'))) {
+        if (!slSet && (val.includes('STOP LOSS') || val.includes('LOSS AMOUNT') || val === 'SL')) {
           let el = node.parentElement;
-          for (let d = 0; d < 5 && el; d++) {
+          for (let d = 0; d < 6 && el; d++) {
             const inp = el.querySelector('input');
             if (inp) { setInputValue(inp, slAmount); slSet = true; break; }
             el = el.parentElement;
           }
         }
+      }
+    }
+
+    // 5. Last resort: find any two numeric/text inputs in the trading panel
+    //    (first = TP, second = SL — XM always shows TP before SL)
+    if (!tpSet && !slSet) {
+      const allInputs = deepQueryAll('input[type="text"], input[type="number"], input:not([type])')
+        .filter((el) => !el.readOnly && !el.disabled && el.offsetParent !== null);
+      // Skip quantity/lots inputs (usually first in the form, before TP/SL)
+      // TP and SL inputs tend to appear in the lower part — take the last two visible inputs
+      if (allInputs.length >= 2) {
+        setInputValue(allInputs[allInputs.length - 2], tpAmount);
+        setInputValue(allInputs[allInputs.length - 1], slAmount);
+        tpSet = true;
+        slSet = true;
       }
     }
 
