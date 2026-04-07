@@ -8,7 +8,8 @@
     "tabs",
     "alarms",
     "scripting",
-    "notifications"
+    "notifications",
+    "webNavigation"
   ],
   "host_permissions": [
     "https://my.xm.com/*",
@@ -40,7 +41,8 @@
       "matches": ["https://my.xm.com/*", "https://*.xm.com/*"],
       "js": ["content.js"],
       "run_at": "document_idle",
-      "all_frames": true
+      "all_frames": true,
+      "match_origin_as_fallback": true
     }
   ]
 }

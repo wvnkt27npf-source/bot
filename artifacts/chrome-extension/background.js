@@ -73,50 +73,77 @@ async function waitForTabReady(tabId) {
 
 // ----- Trade Execution via Content Script -----
 // All DOM interaction is handled in content.js; we communicate via message passing.
+// XM embeds its trading panel inside a blob: URL iframe — we must target it directly.
 
-// Try to send a message to the content script.
-// If content script is missing (tab reloaded / not yet injected), inject it and retry once.
-async function sendTradeToContentScript(tabId, action, tpAmount, slAmount) {
-
-  function doSend() {
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => resolve({ success: false, reason: 'timeout' }), 30000);
-      chrome.tabs.sendMessage(
-        tabId,
-        { type: 'PLACE_TRADE', action, tpAmount, slAmount },
-        (response) => {
-          clearTimeout(timeout);
-          if (chrome.runtime.lastError) {
-            resolve({ success: false, reason: chrome.runtime.lastError.message });
-          } else {
-            resolve(response || { success: false, reason: 'no_response' });
-          }
-        }
-      );
+// Get all frame IDs for a tab, sorted so non-main frames come first (blob: iframe is what we want)
+function getAllFrames(tabId) {
+  return new Promise((resolve) => {
+    chrome.webNavigation.getAllFrames({ tabId }, (frames) => {
+      if (chrome.runtime.lastError || !frames) { resolve([]); return; }
+      // Sort: non-main frames first (frameId !== 0), then main frame
+      resolve(frames.sort((a, b) => (a.frameId === 0 ? 1 : 0) - (b.frameId === 0 ? 1 : 0)));
     });
+  });
+}
+
+// Send PLACE_TRADE to a specific frame and resolve with its response (or null on no reply)
+function sendToFrame(tabId, frameId, msg) {
+  return new Promise((resolve) => {
+    const t = setTimeout(() => resolve(null), 8000);
+    chrome.tabs.sendMessage(tabId, msg, { frameId }, (response) => {
+      clearTimeout(t);
+      if (chrome.runtime.lastError) { resolve(null); return; }
+      resolve(response || null);
+    });
+  });
+}
+
+// Inject content.js into every frame (handles blob: URL iframes — match_origin_as_fallback
+// covers automatic injection, but programmatic injection is a belt-and-suspenders fallback)
+async function injectAllFrames(tabId) {
+  try {
+    await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] });
+  } catch (e) {
+    console.warn('[AlgoX] allFrames injection error (non-fatal):', e.message);
   }
-
-  // First attempt
-  const first = await doSend();
-
-  // If content script isn't injected yet, inject it and retry
-  const needsInject = first.success === false &&
-    typeof first.reason === 'string' &&
-    (first.reason.includes('Receiving end does not exist') || first.reason.includes('no_response') || first.reason === 'no_response');
-
-  if (needsInject) {
-    console.log('[AlgoX] Content script not found — injecting programmatically and retrying');
+  // Also try frame-by-frame in case some frames need separate targeting
+  const frames = await getAllFrames(tabId);
+  for (const f of frames) {
     try {
-      await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] });
-      await new Promise((r) => setTimeout(r, 600)); // let script initialise
-    } catch (e) {
-      console.warn('[AlgoX] Script injection failed:', e);
-      return { success: false, reason: 'inject_failed: ' + e.message };
-    }
-    return doSend(); // retry
+      await chrome.scripting.executeScript({ target: { tabId, frameIds: [f.frameId] }, files: ['content.js'] });
+    } catch (_) { /* frame may reject injection — normal for sandbox/cross-origin */ }
   }
+  console.log('[AlgoX] Injected into', frames.length, 'frames');
+}
 
-  return first;
+// Send PLACE_TRADE across all frames; first frame that returns success: true wins.
+// Main frame content.js returns false immediately (it knows the panel is in iframe).
+async function broadcastTrade(tabId, action, tpAmount, slAmount) {
+  const frames = await getAllFrames(tabId);
+  console.log('[AlgoX] Broadcasting to', frames.length, 'frames:', frames.map(f => `${f.frameId}:${f.url.substring(0, 60)}`));
+
+  const msg = { type: 'PLACE_TRADE', action, tpAmount, slAmount };
+  let lastResult = { success: false, reason: 'no_responding_frame' };
+
+  for (const frame of frames) {
+    const res = await sendToFrame(tabId, frame.frameId, msg);
+    if (res && res.success) {
+      console.log('[AlgoX] SUCCESS from frameId', frame.frameId, frame.url.substring(0, 80));
+      return res;
+    }
+    if (res) lastResult = res; // keep last non-null response for diagnostics
+    console.log('[AlgoX] Frame', frame.frameId, 'response:', res);
+  }
+  return lastResult;
+}
+
+async function sendTradeToContentScript(tabId, action, tpAmount, slAmount) {
+  // Step 1: Inject into all frames (noop if already injected due to double-load guard)
+  await injectAllFrames(tabId);
+  await new Promise((r) => setTimeout(r, 600)); // let scripts initialise
+
+  // Step 2: Broadcast to all frames, collect first success
+  return broadcastTrade(tabId, action, tpAmount, slAmount);
 }
 
 // ----- Extension Heartbeat (lets dashboard show "Extension Connected") -----
