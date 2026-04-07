@@ -93,6 +93,19 @@ async function sendTradeToContentScript(tabId, action, tpAmount, slAmount) {
   });
 }
 
+// ----- Extension Heartbeat (lets dashboard show "Extension Connected") -----
+
+async function sendHeartbeat() {
+  const { serverUrl } = await getConfig();
+  if (!serverUrl) return;
+  try {
+    await fetch(`${serverUrl}/api/extension/heartbeat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (_) {}
+}
+
 // ----- Core Polling Logic -----
 
 async function poll() {
@@ -206,7 +219,10 @@ async function poll() {
 function startPolling() {
   if (pollingTimer) clearInterval(pollingTimer);
   poll();
+  sendHeartbeat();
   pollingTimer = setInterval(poll, POLL_INTERVAL_MS);
+  // Heartbeat every 10 seconds (independent of signal polling)
+  setInterval(sendHeartbeat, 10_000);
 }
 
 chrome.alarms.onAlarm.addListener((alarm) => {

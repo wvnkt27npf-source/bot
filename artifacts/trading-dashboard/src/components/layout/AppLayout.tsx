@@ -1,9 +1,20 @@
 import { ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "./Sidebar";
-import { Activity, List, Settings } from "lucide-react";
+import { Activity, List, Settings, Puzzle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useSettingsContext } from "@/context/settings-context";
+
+function useExtensionStatus() {
+  const { data } = useQuery<{ connected: boolean; lastHeartbeat: number | null }>({
+    queryKey: ["extension-status"],
+    queryFn: () => fetch("/api/extension/status").then((r) => r.json()),
+    refetchInterval: 5000,
+    retry: false,
+  });
+  return data?.connected ?? false;
+}
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -12,6 +23,7 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const [location] = useLocation();
   const { isAutomationActive } = useSettingsContext();
+  const extensionConnected = useExtensionStatus();
 
   const navItems = [
     { href: "/", label: "Signals", icon: Activity },
@@ -37,20 +49,43 @@ export function AppLayout({ children }: AppLayoutProps) {
           {/* Desktop spacer */}
           <div className="hidden md:block" />
 
-          {/* Right: automation status pill */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground hidden sm:inline">Automation</span>
-            <div className={cn(
-              "flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border",
-              isAutomationActive
-                ? "bg-success/10 text-success border-success/20"
-                : "bg-destructive/10 text-destructive border-destructive/20"
-            )}>
+          {/* Right: extension + automation status pills */}
+          <div className="flex items-center gap-3">
+            {/* Extension connection badge */}
+            <div
+              className={cn(
+                "flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border",
+                extensionConnected
+                  ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                  : "bg-white/5 text-muted-foreground border-white/10"
+              )}
+              title={extensionConnected ? "Chrome extension is connected" : "Chrome extension not detected"}
+            >
+              <Puzzle className="w-3 h-3" />
+              <span className="hidden sm:inline">
+                {extensionConnected ? "Extension" : "No Extension"}
+              </span>
               <div className={cn(
                 "w-1.5 h-1.5 rounded-full",
-                isAutomationActive ? "bg-success animate-pulse" : "bg-destructive"
+                extensionConnected ? "bg-blue-400 animate-pulse" : "bg-muted-foreground/40"
               )} />
-              {isAutomationActive ? "ON" : "OFF"}
+            </div>
+
+            {/* Automation status pill */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground hidden sm:inline">Automation</span>
+              <div className={cn(
+                "flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border",
+                isAutomationActive
+                  ? "bg-success/10 text-success border-success/20"
+                  : "bg-destructive/10 text-destructive border-destructive/20"
+              )}>
+                <div className={cn(
+                  "w-1.5 h-1.5 rounded-full",
+                  isAutomationActive ? "bg-success animate-pulse" : "bg-destructive"
+                )} />
+                {isAutomationActive ? "ON" : "OFF"}
+              </div>
             </div>
           </div>
         </header>
