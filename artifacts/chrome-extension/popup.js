@@ -193,9 +193,13 @@ function runTestTrade(action) {
       if (reason === 'no_xm_tab') {
         statusEl.textContent = 'No XM tab found. Open my.xm.com first.';
       } else if (reason === 'button_not_found') {
-        statusEl.textContent = 'Button not found — check XM page is on trading view.';
+        statusEl.textContent = 'Button not found — open a symbol chart on XM first.';
       } else if (reason === 'timeout') {
-        statusEl.textContent = 'Timeout — XM page too slow to respond.';
+        statusEl.textContent = 'Timeout — XM page took too long. Try again.';
+      } else if (reason && reason.startsWith('inject_failed')) {
+        statusEl.textContent = 'Cannot inject script — reload the XM tab and try again.';
+      } else if (reason && reason.includes('Receiving end')) {
+        statusEl.textContent = 'Script not ready — retrying... try again in 2s.';
       } else {
         statusEl.textContent = `Failed: ${reason}`;
       }

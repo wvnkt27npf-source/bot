@@ -74,23 +74,49 @@ async function waitForTabReady(tabId) {
 // ----- Trade Execution via Content Script -----
 // All DOM interaction is handled in content.js; we communicate via message passing.
 
+// Try to send a message to the content script.
+// If content script is missing (tab reloaded / not yet injected), inject it and retry once.
 async function sendTradeToContentScript(tabId, action, tpAmount, slAmount) {
-  return new Promise((resolve) => {
-    const timeout = setTimeout(() => resolve({ success: false, reason: 'timeout' }), 30000);
-    chrome.tabs.sendMessage(
-      tabId,
-      { type: 'PLACE_TRADE', action, tpAmount, slAmount },
-      (response) => {
-        clearTimeout(timeout);
-        if (chrome.runtime.lastError) {
-          console.warn('[AlgoX] Content script message error:', chrome.runtime.lastError.message);
-          resolve({ success: false, reason: chrome.runtime.lastError.message });
-        } else {
-          resolve(response || { success: false, reason: 'no_response' });
+
+  function doSend() {
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => resolve({ success: false, reason: 'timeout' }), 30000);
+      chrome.tabs.sendMessage(
+        tabId,
+        { type: 'PLACE_TRADE', action, tpAmount, slAmount },
+        (response) => {
+          clearTimeout(timeout);
+          if (chrome.runtime.lastError) {
+            resolve({ success: false, reason: chrome.runtime.lastError.message });
+          } else {
+            resolve(response || { success: false, reason: 'no_response' });
+          }
         }
-      }
-    );
-  });
+      );
+    });
+  }
+
+  // First attempt
+  const first = await doSend();
+
+  // If content script isn't injected yet, inject it and retry
+  const needsInject = first.success === false &&
+    typeof first.reason === 'string' &&
+    (first.reason.includes('Receiving end does not exist') || first.reason.includes('no_response') || first.reason === 'no_response');
+
+  if (needsInject) {
+    console.log('[AlgoX] Content script not found — injecting programmatically and retrying');
+    try {
+      await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
+      await new Promise((r) => setTimeout(r, 600)); // let script initialise
+    } catch (e) {
+      console.warn('[AlgoX] Script injection failed:', e);
+      return { success: false, reason: 'inject_failed: ' + e.message };
+    }
+    return doSend(); // retry
+  }
+
+  return first;
 }
 
 // ----- Extension Heartbeat (lets dashboard show "Extension Connected") -----

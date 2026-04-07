@@ -5,6 +5,13 @@
 (function () {
   'use strict';
 
+  // Guard: prevent double-injection (manifest + scripting.executeScript)
+  if (window.__algoxTraderLoaded) {
+    console.log('[AlgoX] Content script already loaded — skipping duplicate injection');
+    return;
+  }
+  window.__algoxTraderLoaded = true;
+
   let currentOverlay = null;
 
   // ---- Overlay UI ----
