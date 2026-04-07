@@ -633,13 +633,18 @@
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'PLACE_TRADE') {
       if (isMainFrame) {
-        // Main frame has no trading panel — let the iframe handle it.
-        // Do NOT call sendResponse so the iframe's response wins.
-        console.log('[AlgoX][MAIN-FRAME] Skipping PLACE_TRADE — trading panel is in iframe');
+        // Main frame has no trading panel — let the blob iframe handle it.
+        console.log('[AlgoX][MAIN-FRAME] Skipping PLACE_TRADE — trading panel is in blob iframe');
+        return false;
+      }
+      // Skip about:blank and empty-URL frames — they have no trading panel
+      const href = window.location.href;
+      if (!href || href === 'about:blank' || href.startsWith('data:')) {
+        console.log('[AlgoX][IFRAME] Skipping PLACE_TRADE — about:blank frame, no trading panel');
         return false;
       }
       const { action, tpAmount, slAmount } = msg;
-      console.log('[AlgoX][IFRAME] Handling PLACE_TRADE', action, 'from', window.location.href);
+      console.log('[AlgoX][IFRAME] Handling PLACE_TRADE', action, 'from', href);
       executeTrade(action, tpAmount, slAmount).then(sendResponse);
       return true; // keep channel open for async response
     }

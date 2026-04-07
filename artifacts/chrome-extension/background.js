@@ -117,22 +117,39 @@ async function injectAllFrames(tabId) {
 }
 
 // Send PLACE_TRADE across all frames; first frame that returns success: true wins.
-// Main frame content.js returns false immediately (it knows the panel is in iframe).
+// Priority order: blob: frames first (XM trading panel), then other non-main frames, main last.
+// about:blank / data: frames are skipped entirely (no trading panel there).
 async function broadcastTrade(tabId, action, tpAmount, slAmount) {
-  const frames = await getAllFrames(tabId);
-  console.log('[AlgoX] Broadcasting to', frames.length, 'frames:', frames.map(f => `${f.frameId}:${f.url.substring(0, 60)}`));
+  const allFrames = await getAllFrames(tabId);
+
+  // Filter out blank/data frames — their content scripts will skip anyway, but this saves time
+  const usableFrames = allFrames.filter(f => f.url && f.url !== 'about:blank' && !f.url.startsWith('data:'));
+
+  // Sort: blob: frames first (trading panel), then other iframes, then main frame
+  usableFrames.sort((a, b) => {
+    const score = (f) => {
+      if (f.url.startsWith('blob:')) return 0;  // highest priority
+      if (f.frameId !== 0) return 1;             // other iframes
+      return 2;                                   // main frame (last resort)
+    };
+    return score(a) - score(b);
+  });
+
+  console.log('[AlgoX] Broadcasting to', usableFrames.length, 'usable frames:',
+    usableFrames.map(f => `${f.frameId}:${f.url.substring(0, 70)}`));
 
   const msg = { type: 'PLACE_TRADE', action, tpAmount, slAmount };
   let lastResult = { success: false, reason: 'no_responding_frame' };
 
-  for (const frame of frames) {
+  for (const frame of usableFrames) {
+    console.log('[AlgoX] Trying frameId', frame.frameId, frame.url.substring(0, 70));
     const res = await sendToFrame(tabId, frame.frameId, msg);
     if (res && res.success) {
       console.log('[AlgoX] SUCCESS from frameId', frame.frameId, frame.url.substring(0, 80));
       return res;
     }
     if (res) lastResult = res; // keep last non-null response for diagnostics
-    console.log('[AlgoX] Frame', frame.frameId, 'response:', res);
+    console.log('[AlgoX] Frame', frame.frameId, 'response:', JSON.stringify(res));
   }
   return lastResult;
 }
