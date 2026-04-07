@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useGetSettings } from "@workspace/api-client-react";
 import { useUpdateSettings } from "@/hooks/use-trading";
 import { motion } from "framer-motion";
-import { Settings as SettingsIcon, Link2, Download, Terminal, Check, Copy } from "lucide-react";
+import { Settings as SettingsIcon, Link2, Download, Terminal, Check, Copy, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -44,13 +45,20 @@ export function Settings() {
     );
   };
 
-  const webhookUrl = `${window.location.origin}/api/webhook`;
+  // Fetch the full webhook URL (with auth token) from the server
+  const { data: webhookInfo } = useQuery<{ url: string | null; configured: boolean }>({
+    queryKey: ["webhook-url"],
+    queryFn: () => fetch("/api/webhook-url").then((r) => r.json()),
+    staleTime: 60_000,
+  });
+  const webhookUrl = webhookInfo?.url ?? "";
   
   const handleCopy = () => {
+    if (!webhookUrl) return;
     navigator.clipboard.writeText(webhookUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast({ title: "Copied!", description: "Webhook URL copied to clipboard." });
+    toast({ title: "Copied!", description: "Webhook URL (with token) copied to clipboard." });
   };
 
   if (isLoading) return <div className="p-8 text-muted-foreground text-center">Loading settings...</div>;
@@ -161,17 +169,26 @@ export function Settings() {
           
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Webhook URL</label>
+              <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                Webhook URL <span className="text-xs bg-primary/10 text-primary border border-primary/20 rounded px-1.5 py-0.5">includes auth token</span>
+              </label>
+              {webhookInfo && !webhookInfo.configured && (
+                <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-400/10 border border-amber-400/20 rounded-xl px-3 py-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  WEBHOOK_SECRET is not set on the server — webhook authentication is disabled.
+                </div>
+              )}
               <div className="flex gap-2">
                 <input 
                   type="text" 
                   readOnly 
-                  value={webhookUrl}
+                  value={webhookUrl || (webhookInfo === undefined ? "Loading..." : "Not configured")}
                   className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm font-mono text-muted-foreground"
                 />
                 <button 
                   onClick={handleCopy}
-                  className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors shrink-0 flex items-center justify-center"
+                  disabled={!webhookUrl}
+                  className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors shrink-0 flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {copied ? <Check className="w-5 h-5 text-success" /> : <Copy className="w-5 h-5 text-foreground" />}
                 </button>

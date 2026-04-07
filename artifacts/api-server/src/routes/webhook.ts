@@ -10,6 +10,20 @@ const webhookPayloadSchema = z.object({
   price: z.number().optional(),
 });
 
+// Returns the full webhook URL (with token) so the dashboard can display the correct URL.
+// The token is never exposed in the frontend code itself — it comes from the server env.
+router.get("/webhook-url", (req: Request, res: Response) => {
+  const secret = process.env["WEBHOOK_SECRET"];
+  if (!secret) {
+    res.json({ url: null, configured: false });
+    return;
+  }
+  const host = req.get("x-forwarded-host") || req.get("host") || "localhost";
+  const proto = req.get("x-forwarded-proto") || req.protocol || "https";
+  const base = `${proto}://${host}`;
+  res.json({ url: `${base}/api/webhook?token=${secret}`, configured: true });
+});
+
 router.post("/webhook", async (req: Request, res: Response) => {
   const secret = process.env["WEBHOOK_SECRET"];
 
