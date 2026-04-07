@@ -139,6 +139,47 @@ body {
 .btn-retry:active { background: #b45309; }
 .btn-retry:disabled { background: #6b7280; color: #d1d5db; cursor: not-allowed; }
 
+/* Test buttons */
+.test-section { border-top: 1px solid rgba(255,255,255,0.06); }
+
+.test-row {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-test-buy {
+  flex: 1;
+  background: #16a34a;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 8px;
+}
+.btn-test-buy:hover { background: #15803d; }
+.btn-test-buy:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; }
+
+.btn-test-sell {
+  flex: 1;
+  background: #dc2626;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 8px;
+}
+.btn-test-sell:hover { background: #b91c1c; }
+.btn-test-sell:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; }
+
+.test-status {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.test-status.success { background: rgba(22,163,74,0.15); color: #4ade80; border: 1px solid rgba(22,163,74,0.3); }
+.test-status.error   { background: rgba(220,38,38,0.15);  color: #f87171; border: 1px solid rgba(220,38,38,0.3); }
+.test-status.running { background: rgba(59,130,246,0.12); color: #93c5fd; border: 1px solid rgba(59,130,246,0.25); }
+
 /* Toggle */
 .toggle-row {
   display: flex;

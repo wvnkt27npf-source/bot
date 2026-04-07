@@ -162,6 +162,52 @@ $('retryBtn').addEventListener('click', () => {
   });
 });
 
+// Manual test trade buttons
+function runTestTrade(action) {
+  const buyBtn = $('testBuyBtn');
+  const sellBtn = $('testSellBtn');
+  const statusEl = $('testStatus');
+
+  buyBtn.disabled = true;
+  sellBtn.disabled = true;
+  statusEl.className = 'test-status running';
+  statusEl.textContent = `Sending ${action} to XM...`;
+  statusEl.style.display = 'block';
+
+  chrome.runtime.sendMessage({ type: 'TEST_TRADE', action }, (response) => {
+    buyBtn.disabled = false;
+    sellBtn.disabled = false;
+
+    if (chrome.runtime.lastError || !response) {
+      statusEl.className = 'test-status error';
+      statusEl.textContent = 'Error: No XM tab found. Open XM first.';
+      return;
+    }
+
+    if (response.success) {
+      statusEl.className = 'test-status success';
+      statusEl.textContent = `✓ ${action} order placed!`;
+    } else {
+      statusEl.className = 'test-status error';
+      const reason = response.reason || 'unknown';
+      if (reason === 'no_xm_tab') {
+        statusEl.textContent = 'No XM tab found. Open my.xm.com first.';
+      } else if (reason === 'button_not_found') {
+        statusEl.textContent = 'Button not found — check XM page is on trading view.';
+      } else if (reason === 'timeout') {
+        statusEl.textContent = 'Timeout — XM page too slow to respond.';
+      } else {
+        statusEl.textContent = `Failed: ${reason}`;
+      }
+    }
+
+    setTimeout(() => { statusEl.style.display = 'none'; }, 6000);
+  });
+}
+
+$('testBuyBtn').addEventListener('click', () => runTestTrade('BUY'));
+$('testSellBtn').addEventListener('click', () => runTestTrade('SELL'));
+
 // Open dashboard link
 $('openDashboard').addEventListener('click', (e) => {
   e.preventDefault();

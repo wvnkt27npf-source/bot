@@ -229,6 +229,58 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     chrome.storage.local.set({ enabled: msg.enabled }, () => sendResponse({ ok: true }));
     return true;
   }
+  if (msg.type === 'TEST_TRADE') {
+    // Find any open XM tab and fire a test PLACE_TRADE directly — no signal polling needed
+    const { action } = msg;
+    chrome.storage.local.get(['lastTradeContext', 'serverUrl'], async (data) => {
+      // Look for any XM tab
+      chrome.tabs.query({ url: 'https://my.xm.com/*' }, async (tabs) => {
+        if (!tabs || tabs.length === 0) {
+          sendResponse({ success: false, reason: 'no_xm_tab' });
+          return;
+        }
+
+        const tabId = tabs[0].id;
+        // Bring tab to front
+        chrome.tabs.update(tabId, { active: true });
+        chrome.tabs.get(tabId, (t) => {
+          if (t && t.windowId) chrome.windows.update(t.windowId, { focused: true });
+        });
+
+        await new Promise((r) => setTimeout(r, 300));
+
+        // Use stored TP/SL settings if available, otherwise defaults
+        chrome.storage.local.get(['serverUrl'], async (cfg) => {
+          let tpAmount = 2;
+          let slAmount = 2;
+          try {
+            const serverUrl = (cfg.serverUrl || '').replace(/\/$/, '');
+            if (serverUrl) {
+              const res = await fetch(`${serverUrl}/api/settings`);
+              if (res.ok) {
+                const settings = await res.json();
+                tpAmount = settings.tpAmount || 2;
+                slAmount = settings.slAmount || 2;
+              }
+            }
+          } catch (_) {}
+
+          await saveStatus({ processingStatus: 'placing_order' });
+          const tradeResult = await sendTradeToContentScript(tabId, action, tpAmount, slAmount);
+          console.log('[AlgoX] Test trade result:', tradeResult);
+
+          await saveStatus({
+            processingStatus: tradeResult?.success ? 'success' : 'manual_required',
+            lastProcessed: Date.now()
+          });
+
+          sendResponse(tradeResult || { success: false, reason: 'no_response' });
+        });
+      });
+    });
+    return true;
+  }
+
   if (msg.type === 'RETRY_TRADE') {
     chrome.storage.local.get(['lastTradeContext', 'serverUrl'], async (data) => {
       const ctx = data.lastTradeContext;
