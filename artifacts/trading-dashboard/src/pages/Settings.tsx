@@ -3,9 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useGetSettings } from "@workspace/api-client-react";
 import { useUpdateSettings } from "@/hooks/use-trading";
 import { motion } from "framer-motion";
-import { Settings as SettingsIcon, Link2, Download, Terminal, Check, Copy, AlertTriangle } from "lucide-react";
+import { Settings as SettingsIcon, Link2, Download, Terminal, Check, Copy, AlertTriangle, Globe, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+
+type SymbolRecord = { id: number; name: string; xmUrl: string };
 
 export function Settings() {
   const { data: settings, isLoading } = useGetSettings();
@@ -16,6 +18,59 @@ export function Settings() {
   const [slStr, setSlStr] = useState<string>("2");
   const [automationEnabled, setAutomationEnabled] = useState<boolean>(true);
   const [copied, setCopied] = useState(false);
+
+  // Symbols state
+  const { data: symbols = [], refetch: refetchSymbols } = useQuery<SymbolRecord[]>({
+    queryKey: ["symbols"],
+    queryFn: () => fetch("/api/symbols").then((r) => r.json()),
+    staleTime: 30_000,
+  });
+  const [newSymbolName, setNewSymbolName] = useState("");
+  const [newSymbolUrl, setNewSymbolUrl] = useState("");
+  const [isAddingSymbol, setIsAddingSymbol] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [symbolFilter, setSymbolFilter] = useState("");
+
+  const filteredSymbols = symbols.filter(
+    (s) => s.name.toLowerCase().includes(symbolFilter.toLowerCase()) ||
+           s.xmUrl.toLowerCase().includes(symbolFilter.toLowerCase())
+  );
+
+  const handleAddSymbol = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSymbolName.trim() || !newSymbolUrl.trim()) return;
+    setIsAddingSymbol(true);
+    try {
+      const res = await fetch("/api/symbols", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newSymbolName.trim().toUpperCase(), xmUrl: newSymbolUrl.trim() }),
+      });
+      if (res.status === 409) { toast({ title: "Symbol already exists", variant: "destructive" }); return; }
+      if (!res.ok) throw new Error("Failed");
+      setNewSymbolName("");
+      setNewSymbolUrl("https://my.xm.com/symbol-info/");
+      refetchSymbols();
+      toast({ title: "Symbol Added", description: `${newSymbolName.toUpperCase()} added to registry.` });
+    } catch {
+      toast({ title: "Error", description: "Failed to add symbol.", variant: "destructive" });
+    } finally {
+      setIsAddingSymbol(false);
+    }
+  };
+
+  const handleDeleteSymbol = async (id: number, name: string) => {
+    setDeletingId(id);
+    try {
+      await fetch(`/api/symbols/${id}`, { method: "DELETE" });
+      refetchSymbols();
+      toast({ title: "Symbol Removed", description: `${name} removed from registry.` });
+    } catch {
+      toast({ title: "Error", description: "Failed to delete symbol.", variant: "destructive" });
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   // Sync state when data loads
   useEffect(() => {
@@ -263,6 +318,114 @@ export function Settings() {
           </div>
         </motion.div>
       </div>
+
+      {/* Symbol Registry — full width below the grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="glass-panel p-6 rounded-2xl"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Globe className="w-5 h-5 text-primary" />
+            Symbol Registry
+            <span className="ml-2 text-sm font-normal text-muted-foreground bg-white/5 border border-white/10 rounded-full px-3 py-0.5">
+              {symbols.length} symbols
+            </span>
+          </h2>
+        </div>
+
+        <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+          Maps TradingView signal symbols (e.g. <code className="bg-black/40 px-1.5 py-0.5 rounded text-primary">NZDUSD</code>) to their XM trading page URLs.
+          When a signal arrives, the extension opens the matching XM page and places the order automatically.
+          Forex pairs use no suffix; crypto pairs use <code className="bg-black/40 px-1.5 py-0.5 rounded text-primary">%23</code> (encoded #) in the URL.
+        </p>
+
+        {/* Add new symbol */}
+        <form onSubmit={handleAddSymbol} className="flex flex-wrap gap-3 mb-5 p-4 bg-black/30 border border-white/5 rounded-xl">
+          <input
+            type="text"
+            placeholder="Symbol (e.g. XAUUSD)"
+            value={newSymbolName}
+            onChange={(e) => setNewSymbolName(e.target.value.toUpperCase())}
+            className="glass-input rounded-lg px-3 py-2 text-sm font-mono w-36 uppercase"
+            maxLength={12}
+          />
+          <input
+            type="url"
+            placeholder="https://my.xm.com/symbol-info/XAUUSD"
+            value={newSymbolUrl}
+            onChange={(e) => setNewSymbolUrl(e.target.value)}
+            className="glass-input rounded-lg px-3 py-2 text-sm font-mono flex-1 min-w-64"
+          />
+          <button
+            type="submit"
+            disabled={isAddingSymbol || !newSymbolName || !newSymbolUrl}
+            className="flex items-center gap-1.5 px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm font-semibold hover:bg-primary hover:text-white transition-colors disabled:opacity-40"
+          >
+            <Plus className="w-4 h-4" />
+            {isAddingSymbol ? "Adding..." : "Add Symbol"}
+          </button>
+        </form>
+
+        {/* Filter */}
+        <input
+          type="text"
+          placeholder="Filter symbols..."
+          value={symbolFilter}
+          onChange={(e) => setSymbolFilter(e.target.value)}
+          className="glass-input rounded-lg px-3 py-2 text-sm w-full mb-3"
+        />
+
+        {/* Symbol table */}
+        <div className="overflow-auto max-h-72 rounded-xl border border-white/5">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-black/60 backdrop-blur-sm">
+              <tr className="border-b border-white/10">
+                <th className="text-left px-4 py-2.5 text-muted-foreground font-medium w-28">Symbol</th>
+                <th className="text-left px-4 py-2.5 text-muted-foreground font-medium">XM URL</th>
+                <th className="px-4 py-2.5 w-12"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredSymbols.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="text-center py-6 text-muted-foreground">
+                    {symbols.length === 0 ? "Loading symbols..." : "No symbols match your filter"}
+                  </td>
+                </tr>
+              )}
+              {filteredSymbols.map((s) => (
+                <tr key={s.id} className="border-b border-white/5 hover:bg-white/3 transition-colors group">
+                  <td className="px-4 py-2.5">
+                    <span className="font-mono font-semibold text-primary">{s.name}</span>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <a
+                      href={s.xmUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors truncate block max-w-sm"
+                    >
+                      {s.xmUrl}
+                    </a>
+                  </td>
+                  <td className="px-4 py-2.5 text-center">
+                    <button
+                      onClick={() => handleDeleteSymbol(s.id, s.name)}
+                      disabled={deletingId === s.id}
+                      className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-destructive hover:bg-destructive/10 transition-all disabled:opacity-40"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
     </div>
   );
 }

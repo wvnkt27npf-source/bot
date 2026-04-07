@@ -11,18 +11,45 @@ const createSymbolSchema = z.object({
 });
 
 const DEFAULT_SYMBOLS = [
-  { name: "BTCUSD", xmUrl: "https://my.xm.com/symbol-info/BTCUSD%23" },
-  { name: "ETHUSD", xmUrl: "https://my.xm.com/symbol-info/ETHUSD%23" },
-  { name: "ENJUSD", xmUrl: "https://my.xm.com/symbol-info/ENJUSD%23" },
-  { name: "XRPUSD", xmUrl: "https://my.xm.com/symbol-info/XRPUSD%23" },
-  { name: "LTCUSD", xmUrl: "https://my.xm.com/symbol-info/LTCUSD%23" },
+  // Crypto (XM uses # suffix for crypto CFDs)
+  { name: "BTCUSD",  xmUrl: "https://my.xm.com/symbol-info/BTCUSD%23" },
+  { name: "ETHUSD",  xmUrl: "https://my.xm.com/symbol-info/ETHUSD%23" },
+  { name: "XRPUSD",  xmUrl: "https://my.xm.com/symbol-info/XRPUSD%23" },
+  { name: "LTCUSD",  xmUrl: "https://my.xm.com/symbol-info/LTCUSD%23" },
+  { name: "ENJUSD",  xmUrl: "https://my.xm.com/symbol-info/ENJUSD%23" },
+  // Major Forex pairs
+  { name: "EURUSD",  xmUrl: "https://my.xm.com/symbol-info/EURUSD" },
+  { name: "GBPUSD",  xmUrl: "https://my.xm.com/symbol-info/GBPUSD" },
+  { name: "USDJPY",  xmUrl: "https://my.xm.com/symbol-info/USDJPY" },
+  { name: "USDCHF",  xmUrl: "https://my.xm.com/symbol-info/USDCHF" },
+  { name: "AUDUSD",  xmUrl: "https://my.xm.com/symbol-info/AUDUSD" },
+  { name: "NZDUSD",  xmUrl: "https://my.xm.com/symbol-info/NZDUSD" },
+  { name: "USDCAD",  xmUrl: "https://my.xm.com/symbol-info/USDCAD" },
+  // Minor Forex pairs
+  { name: "EURGBP",  xmUrl: "https://my.xm.com/symbol-info/EURGBP" },
+  { name: "EURJPY",  xmUrl: "https://my.xm.com/symbol-info/EURJPY" },
+  { name: "GBPJPY",  xmUrl: "https://my.xm.com/symbol-info/GBPJPY" },
+  { name: "AUDCAD",  xmUrl: "https://my.xm.com/symbol-info/AUDCAD" },
+  { name: "AUDNZD",  xmUrl: "https://my.xm.com/symbol-info/AUDNZD" },
+  { name: "CADJPY",  xmUrl: "https://my.xm.com/symbol-info/CADJPY" },
+  { name: "CHFJPY",  xmUrl: "https://my.xm.com/symbol-info/CHFJPY" },
+  { name: "EURCHF",  xmUrl: "https://my.xm.com/symbol-info/EURCHF" },
+  { name: "EURCAD",  xmUrl: "https://my.xm.com/symbol-info/EURCAD" },
+  { name: "EURAUD",  xmUrl: "https://my.xm.com/symbol-info/EURAUD" },
+  { name: "EURNZD",  xmUrl: "https://my.xm.com/symbol-info/EURNZD" },
+  { name: "GBPAUD",  xmUrl: "https://my.xm.com/symbol-info/GBPAUD" },
+  { name: "GBPCAD",  xmUrl: "https://my.xm.com/symbol-info/GBPCAD" },
+  { name: "GBPCHF",  xmUrl: "https://my.xm.com/symbol-info/GBPCHF" },
+  { name: "GBPNZD",  xmUrl: "https://my.xm.com/symbol-info/GBPNZD" },
+  { name: "NZDCAD",  xmUrl: "https://my.xm.com/symbol-info/NZDCAD" },
+  { name: "NZDCHF",  xmUrl: "https://my.xm.com/symbol-info/NZDCHF" },
+  { name: "NZDJPY",  xmUrl: "https://my.xm.com/symbol-info/NZDJPY" },
 ];
 
 async function ensureDefaultSymbols() {
-  const existing = await db.select().from(symbolsTable);
-  if (existing.length === 0) {
-    await db.insert(symbolsTable).values(DEFAULT_SYMBOLS);
-  }
+  // Always upsert all defaults (onConflictDoNothing skips existing names)
+  // so new defaults are added when the server restarts even if the table had data.
+  await db.insert(symbolsTable).values(DEFAULT_SYMBOLS).onConflictDoNothing();
 }
 
 router.get("/symbols", async (_req: Request, res: Response) => {
