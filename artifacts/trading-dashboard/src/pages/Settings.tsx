@@ -233,8 +233,7 @@ export function Settings() {
                   <p className="text-xs text-muted-foreground mt-1">v1.0.0 (Unpacked)</p>
                 </div>
                 <a
-                  href={`${import.meta.env.BASE_URL}chrome-extension.zip`}
-                  download="algox-trader-extension.zip"
+                  href="/api/extension/download"
                   className="px-4 py-2 bg-primary/20 text-primary border border-primary/30 rounded-lg text-sm font-semibold hover:bg-primary hover:text-white transition-colors w-full text-center"
                 >
                   Download ZIP
