@@ -164,13 +164,10 @@
 
   // ---- TP/SL Input Setting ----
 
-  // XM shows "Price" and "Amount" tabs for TP/SL.
-  // We always click "Amount" first so values are in dollar terms (not price levels).
-  // Uses a full MouseEvent so Angular's (click) binding fires correctly.
+  // General purpose click dispatcher — used for toggles, Place Order button, etc.
+  // Uses aggressiveClick defined below. Forward ref is OK since JS hoists functions.
   function dispatchClick(el) {
-    el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-    el.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true, cancelable: true }));
-    el.dispatchEvent(new MouseEvent('click',     { bubbles: true, cancelable: true }));
+    aggressiveClick(el);
   }
 
   // Set input value in a way Angular's ControlValueAccessor registers the change.
@@ -187,57 +184,155 @@
     input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: String(value) }));
   }
 
-  // Find the Amount tab (exact text match) and click it.
-  function findAmountTab() {
-    const candidates = deepQueryAll('button, [role="button"], [role="tab"], div[class], span[class], li, a');
-    return candidates.find((el) => {
-      // Direct text exactly "Amount" (case-insensitive), NOT "amounts" or "take profit amount"
-      const t = el.textContent.trim().toUpperCase();
-      return t === 'AMOUNT';
-    }) || null;
+  // Find all elements whose DIRECT text exactly matches target (case-insensitive).
+  // "Direct text" = the element's own text nodes, ignoring child element text.
+  function findByDirectText(target) {
+    const UP = target.toUpperCase();
+    const candidates = deepQueryAll('*');
+    return candidates.filter((el) => {
+      // Sum up only direct text nodes (skip child elements)
+      let direct = '';
+      el.childNodes.forEach((node) => {
+        if (node.nodeType === Node.TEXT_NODE) direct += node.nodeValue;
+      });
+      return direct.trim().toUpperCase() === UP;
+    });
   }
 
-  // Check if Amount tab is currently selected by looking at classes/ARIA.
-  // We compare Amount vs Price tab — whichever looks "more active" wins.
+  // Find the Price/Amount tab PAIR — they must be siblings or share a grandparent.
+  // This avoids false positives where "Amount" appears elsewhere on the page.
+  function findTpSlTabPair() {
+    const priceEls  = findByDirectText('Price');
+    const amountEls = findByDirectText('Amount');
+
+    // Try sibling pairs first (most accurate)
+    for (const p of priceEls) {
+      for (const a of amountEls) {
+        if (p.parentElement && p.parentElement === a.parentElement) return { priceEl: p, amountEl: a };
+      }
+    }
+    // Grandparent level
+    for (const p of priceEls) {
+      for (const a of amountEls) {
+        if (p.parentElement?.parentElement && p.parentElement.parentElement === a.parentElement?.parentElement) {
+          return { priceEl: p, amountEl: a };
+        }
+      }
+    }
+    // Last resort: first found
+    return { priceEl: priceEls[0] || null, amountEl: amountEls[0] || null };
+  }
+
+  function findByExactText(target) {
+    const { priceEl, amountEl } = findTpSlTabPair();
+    return target.toUpperCase() === 'AMOUNT' ? amountEl : priceEl;
+  }
+
+  // Get the best clickable element inside a container (handles Angular Material inner <button>).
+  function getClickTarget(el) {
+    if (!el) return null;
+    // If the element IS a button/input/label — click it directly
+    if (['BUTTON', 'INPUT', 'LABEL', 'A'].includes(el.tagName)) return el;
+    // Look for a button or input inside (Angular Material wraps content in a <button>)
+    const inner = el.querySelector('button') || el.querySelector('input[type="button"]')
+                || el.querySelector('label') || el.querySelector('a');
+    return inner || el;
+  }
+
+  // Multi-strategy click: native .click() + pointer events + mouse events.
+  function fireClickOn(target) {
+    if (!target) return;
+    try { target.focus(); } catch (_) {}
+    try { target.click(); } catch (_) {}
+    try {
+      target.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerId: 1 }));
+      target.dispatchEvent(new PointerEvent('pointerup',   { bubbles: true, cancelable: true, pointerId: 1 }));
+    } catch (_) {}
+    target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+    target.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true, cancelable: true }));
+    target.dispatchEvent(new MouseEvent('click',     { bubbles: true, cancelable: true }));
+  }
+
+  function aggressiveClick(el) {
+    if (!el) return;
+    // Click the best inner target (button inside mat-button-toggle, etc.)
+    const target = getClickTarget(el);
+    fireClickOn(target);
+
+    // Also walk UP to the nearest button/anchor ancestor and click that too
+    // (handles cases where el is an inner <span> and the handler is on a parent <button>)
+    if (target === el || target.tagName !== 'BUTTON') {
+      let ancestor = el.parentElement;
+      let depth = 0;
+      while (ancestor && depth < 5) {
+        if (['BUTTON', 'A', 'LI'].includes(ancestor.tagName) ||
+            ancestor.getAttribute('role') === 'button' ||
+            ancestor.getAttribute('role') === 'tab') {
+          fireClickOn(ancestor);
+          break;
+        }
+        ancestor = ancestor.parentElement;
+        depth++;
+      }
+    }
+  }
+
+  // Check if Amount tab is currently selected by comparing Amount vs Price tab state.
   function isAmountTabActive() {
-    const candidates = deepQueryAll('button, [role="button"], [role="tab"], div[class], span[class], li, a');
-    let amountTab = null;
-    let priceTab = null;
-    for (const el of candidates) {
-      const t = el.textContent.trim().toUpperCase();
-      if (t === 'AMOUNT') amountTab = el;
-      if (t === 'PRICE') priceTab = el;
-    }
-    if (!amountTab) return false;
+    const amountEl = findByExactText('Amount');
+    const priceEl  = findByExactText('Price');
+    if (!amountEl) return false;
 
-    // Check ARIA attributes first (most reliable)
-    if (amountTab.getAttribute('aria-selected') === 'true') return true;
-    if (amountTab.getAttribute('aria-checked') === 'true') return true;
-    if (priceTab && priceTab.getAttribute('aria-selected') === 'true') return false;
+    // ARIA selected/checked (most reliable)
+    if (amountEl.getAttribute('aria-selected') === 'true') return true;
+    if (amountEl.getAttribute('aria-checked') === 'true') return true;
+    if (priceEl && priceEl.getAttribute('aria-selected') === 'true') return false;
+    if (priceEl && priceEl.getAttribute('aria-pressed') === 'true') return false;
+    if (amountEl.getAttribute('aria-pressed') === 'true') return true;
 
-    // Compare CSS classes: look for "active", "selected", etc.
-    const amountCls = (amountTab.className || '').toString().toLowerCase();
-    const priceCls = priceTab ? (priceTab.className || '').toString().toLowerCase() : '';
-    const activeKeywords = ['active', 'selected', 'current', 'checked', '-on', 'open'];
-    const amountScore = activeKeywords.filter((k) => amountCls.includes(k)).length;
-    const priceScore = activeKeywords.filter((k) => priceCls.includes(k)).length;
-    if (amountScore > priceScore) return true;
-    if (priceScore > amountScore) return false;
+    // CSS class comparison (active, selected, checked, current)
+    const activeKw = ['active', 'selected', 'current', 'checked', '-on', 'open', 'focused'];
+    const aCls = (amountEl.className || '').toString().toLowerCase();
+    const pCls = priceEl ? (priceEl.className || '').toString().toLowerCase() : '';
+    const aScore = activeKw.filter((k) => aCls.includes(k)).length;
+    const pScore = activeKw.filter((k) => pCls.includes(k)).length;
+    if (aScore > pScore) return true;
+    if (pScore > aScore) return false;
 
-    // Neither has a clear winner — assume not active (will click Amount)
-    return false;
+    // Check computed color — active tab usually has different text/bg color
+    try {
+      const aColor = window.getComputedStyle(amountEl).color;
+      const pColor = window.getComputedStyle(priceEl || amountEl).color;
+      // If colors differ and we can detect which one is "highlighted" (lighter), assume it
+      // This is a last-resort heuristic — we assume white/brighter = active on dark XM theme
+      const brightness = (cssColor) => {
+        const m = cssColor.match(/[\d.]+/g);
+        return m ? (parseInt(m[0]) * 299 + parseInt(m[1]) * 587 + parseInt(m[2]) * 114) / 1000 : 0;
+      };
+      if (priceEl && aColor !== pColor) return brightness(aColor) > brightness(pColor);
+    } catch (_) {}
+
+    return false; // can't determine — assume not active (will click)
   }
 
-  // Click Amount tab and wait for Angular to re-render the Amount inputs.
+  // Switch to Amount tab, retrying up to 3 times if detection is uncertain.
   async function ensureAmountTabActive() {
-    // Skip click if already active (saves ~1s on retry attempts)
-    if (isAmountTabActive()) return true;
-    const tab = findAmountTab();
-    if (tab) {
-      dispatchClick(tab);
-      await delay(1000); // Angular needs ~700-1000ms to swap TP/SL inputs
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (isAmountTabActive()) return true;
+      const amountEl = findByExactText('Amount');
+      if (!amountEl) {
+        console.warn('[AlgoX] Amount tab not found in DOM');
+        await delay(500);
+        continue;
+      }
+      console.log('[AlgoX] Clicking Amount tab (attempt', attempt + 1, '), el:', amountEl.tagName, amountEl.className);
+      aggressiveClick(amountEl);
+      await delay(1000); // wait for Angular re-render
     }
-    return isAmountTabActive(); // may still be false if class detection fails, but we clicked
+    // Last check — proceed regardless (we tried 3 times)
+    const active = isAmountTabActive();
+    console.log('[AlgoX] Amount tab active after attempts:', active);
+    return active;
   }
 
   async function findAndSetTpSl(tpAmount, slAmount) {
