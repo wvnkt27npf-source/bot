@@ -122,48 +122,52 @@
     return texts;
   }
 
-  // Find a toggle switch by its visible label text and enable it if currently off.
-  // Returns true if toggle was found AND is now on, false if not found.
+  // ---- XM Confirmed Selectors (discovered via DevTools inspection) ----
+  // TP/SL toggle:       xm-ion-toggle[formcontrolname="isShowTpSl"] input[type="checkbox"]
+  // Amount tab:         button[xmiontabbutton] with text "Amount"
+  // TP input:           app-incremental-input.tpsl-input (1st) > input
+  // SL input:           app-incremental-input.tpsl-input (2nd) > input
+  // Place Order button: xm-trade-button-filled button[type="submit"]
+  // BUY/SELL buttons:   inside app-order-buttons — button/ion-button with text BUY/SELL
 
-  function findToggleNear(labelText) {
-    // Search through normal DOM and shadow DOM text nodes
+  // Enable TP/SL toggle using confirmed XM selector
+  async function enableTpSlToggle() {
+    // Confirmed selector
+    const checkbox = document.querySelector(
+      'xm-ion-toggle[formcontrolname="isShowTpSl"] input[type="checkbox"]'
+    );
+    if (checkbox) {
+      if (!checkbox.checked) {
+        checkbox.click();
+        await delay(350);
+      }
+      return checkbox.checked ? 'on' : 'off';
+    }
+    return 'not_found';
+  }
+
+  // Legacy wrapper kept for compatibility — now delegates to enableTpSlToggle for TP/SL
+  async function enableToggleByLabel(labelText) {
+    if (labelText.toLowerCase().includes('tp') || labelText.toLowerCase().includes('sl') ||
+        labelText.toLowerCase().includes('tpsl')) {
+      return enableTpSlToggle();
+    }
+    // For other toggles: generic text-node search
     const textNodes = deepTextWalker(document.body);
     for (const node of textNodes) {
       if (node.nodeValue && node.nodeValue.trim().toLowerCase().includes(labelText.toLowerCase())) {
         let container = node.parentElement;
         for (let depth = 0; depth < 8 && container; depth++) {
-          // Check container itself and shadow root inside it
-          const searchRoot = container.shadowRoot || container;
-          const toggle = searchRoot.querySelector(
-            'input[type="checkbox"], [role="switch"], [role="checkbox"], .toggle, .switch, .switcher'
-          );
-          if (toggle) return toggle;
+          const toggle = container.querySelector('input[type="checkbox"], [role="switch"]');
+          if (toggle) {
+            if (!toggle.checked) { toggle.click(); await delay(300); }
+            return toggle.checked ? 'on' : 'off';
+          }
           container = container.parentElement;
         }
       }
     }
-    // Fallback: search all toggles in shadow DOM directly
-    return deepQuery('input[type="checkbox"], [role="switch"]');
-  }
-
-  function isToggleOn(toggle) {
-    if (toggle.tagName === 'INPUT') return toggle.checked;
-    const ariaChecked = toggle.getAttribute('aria-checked');
-    if (ariaChecked !== null) return ariaChecked === 'true';
-    const cls = (toggle.className || '').toLowerCase();
-    return cls.includes('active') || cls.includes('-on') || cls.includes('enabled') || cls.includes('checked');
-  }
-
-  // Returns: 'on' | 'off' | 'not_found'
-  // Clicks the toggle if found and off, then re-checks state after a short delay.
-  async function enableToggleByLabel(labelText) {
-    const toggle = findToggleNear(labelText);
-    if (!toggle) return 'not_found';
-    if (!isToggleOn(toggle)) {
-      dispatchClick(toggle); // use full mouse events for Angular compatibility
-      await delay(300); // wait for state update
-    }
-    return isToggleOn(toggle) ? 'on' : 'off';
+    return 'not_found';
   }
 
   // ---- TP/SL Input Setting ----
@@ -310,26 +314,28 @@
   }
 
   async function ensureAmountTabActive() {
-    // Run diagnostics first so logs are available for debugging
-    diagnosticDump();
-
+    // Confirmed XM selector: button[xmiontabbutton] with text "Amount"
     for (let attempt = 0; attempt < 3; attempt++) {
-      if (isAmountTabActive()) {
+      const allTabBtns = Array.from(document.querySelectorAll('button[xmiontabbutton]'));
+      const amountBtn = allTabBtns.find(b => b.textContent.trim() === 'Amount');
+      if (!amountBtn) {
+        console.log('[AlgoX] Amount tab button not found (attempt', attempt + 1, ')');
+        await delay(500);
+        continue;
+      }
+      const isActive = amountBtn.classList.contains('active');
+      if (isActive) {
         console.log('[AlgoX] Amount tab already active');
         return true;
       }
-      const btn = findAmountTabButton();
-      if (!btn) {
-        console.log('[AlgoX] Amount tab button not found in DOM (attempt', attempt + 1, ')');
-        await delay(600);
-        continue;
-      }
-      console.log('[AlgoX] Clicking Amount tab (attempt', attempt + 1, '), el:', btn.tagName, String(btn.className).substring(0, 60));
-      // For ion-segment-button: click the element itself (Ionic handles the rest)
-      fireClickOn(btn);
-      await delay(800);
+      console.log('[AlgoX] Clicking Amount tab (attempt', attempt + 1, ')');
+      amountBtn.click();
+      await delay(600);
     }
-    const active = isAmountTabActive();
+    // Check final state
+    const allTabBtns = Array.from(document.querySelectorAll('button[xmiontabbutton]'));
+    const amountBtn = allTabBtns.find(b => b.textContent.trim() === 'Amount');
+    const active = amountBtn?.classList.contains('active') || false;
     console.log('[AlgoX] Amount tab active after attempts:', active);
     return active;
   }
@@ -362,91 +368,51 @@
   }
 
   async function findAndSetTpSl(tpAmount, slAmount) {
-    // 1. Switch to Amount tab first
+    // 1. Switch to Amount tab (confirmed: button[xmiontabbutton] with text "Amount")
     await ensureAmountTabActive();
-    await delay(500);
+    await delay(400);
 
     let tpSet = false;
     let slSet = false;
 
-    // 2. Try placeholder/name/id selector patterns on ALL inputs (incl. shadow DOM)
-    const tpPatterns = [
-      'input[placeholder*="take profit" i]', 'input[placeholder*="profit" i]',
-      'input[name*="takeprofit" i]', 'input[name*="take_profit" i]', 'input[name*="profit" i]',
-      'input[id*="takeprofit" i]', 'input[id*="profit" i]',
-    ];
-    const slPatterns = [
-      'input[placeholder*="stop loss" i]', 'input[placeholder*="loss" i]',
-      'input[name*="stoploss" i]', 'input[name*="stop_loss" i]', 'input[name*="loss" i]',
-      'input[id*="stoploss" i]', 'input[id*="loss" i]',
-    ];
-
-    for (const p of tpPatterns) {
-      const el = deepQuery(p);
-      if (el) { setInputValue(el, tpAmount); tpSet = true; break; }
-    }
-    for (const p of slPatterns) {
-      const el = deepQuery(p);
-      if (el) { setInputValue(el, slAmount); slSet = true; break; }
+    // 2. CONFIRMED XM SELECTOR: app-incremental-input.tpsl-input
+    //    First = Take Profit, Second = Stop Loss
+    const tpslContainers = document.querySelectorAll('app-incremental-input.tpsl-input');
+    console.log('[AlgoX] tpsl-input containers found:', tpslContainers.length);
+    if (tpslContainers.length >= 2) {
+      const tpInput = tpslContainers[0].querySelector('input');
+      const slInput = tpslContainers[1].querySelector('input');
+      if (tpInput) { setInputValue(tpInput, tpAmount); tpSet = true; }
+      if (slInput) { setInputValue(slInput, slAmount); slSet = true; }
+      console.log('[AlgoX] Set via confirmed selector — TP:', tpInput?.value, 'SL:', slInput?.value);
+      return { tpSet, slSet };
+    } else if (tpslContainers.length === 1) {
+      // Only one found — assume it's TP
+      const inp = tpslContainers[0].querySelector('input');
+      if (inp) { setInputValue(inp, tpAmount); tpSet = true; }
     }
 
-    // 3. Walk ion-input / xm-ion-input elements and match by label text
+    // 3. Fallback: any editable input inside xm-numeric-input or xm-ion-masked-input
     if (!tpSet || !slSet) {
-      const ionInputWrappers = deepQueryAll('ion-input, xm-ion-input');
-      console.log('[AlgoX] Scanning', ionInputWrappers.length, 'ion-input/xm-ion-input wrappers for TP/SL');
-      for (const wrapper of ionInputWrappers) {
-        const inner = getInnerInput(wrapper);
-        if (!inner || inner.readOnly || inner.disabled) continue;
-        const label = labelTextNear(wrapper);
-        console.log('[AlgoX] ion-input label:', label, 'input type:', inner.type, 'ph:', inner.placeholder);
-        if (!tpSet && (label.includes('TAKE PROFIT') || label.includes('PROFIT') || label.includes('TP'))) {
-          setInputValue(inner, tpAmount); tpSet = true;
-        } else if (!slSet && (label.includes('STOP LOSS') || label.includes('LOSS') || label.includes('SL'))) {
-          setInputValue(inner, slAmount); slSet = true;
-        }
+      const wrappers = Array.from(document.querySelectorAll('xm-numeric-input, xm-ion-masked-input'));
+      const editableInputs = wrappers.map(w => w.querySelector('input')).filter(i => i && !i.readOnly && !i.disabled);
+      console.log('[AlgoX] Fallback: found', editableInputs.length, 'inputs in xm-numeric-input wrappers');
+      if (!tpSet && editableInputs[editableInputs.length - 2]) {
+        setInputValue(editableInputs[editableInputs.length - 2], tpAmount); tpSet = true;
+      }
+      if (!slSet && editableInputs[editableInputs.length - 1]) {
+        setInputValue(editableInputs[editableInputs.length - 1], slAmount); slSet = true;
       }
     }
 
-    // 4. Text node walk near TP/SL keywords
-    if (!tpSet || !slSet) {
-      const textNodes = deepTextWalker(document.body);
-      for (const node of textNodes) {
-        const val = String(node.nodeValue).trim().toUpperCase();
-        if (!tpSet && (val.includes('TAKE PROFIT') || val.includes('PROFIT AMOUNT') || val === 'TP')) {
-          let el = node.parentElement;
-          for (let d = 0; d < 8 && el; d++) {
-            const inp = el.querySelector('input') ||
-                        (el.shadowRoot && el.shadowRoot.querySelector('input'));
-            if (inp && !inp.readOnly && !inp.disabled) {
-              setInputValue(inp, tpAmount); tpSet = true; break;
-            }
-            el = el.parentElement;
-          }
-        }
-        if (!slSet && (val.includes('STOP LOSS') || val.includes('LOSS AMOUNT') || val === 'SL')) {
-          let el = node.parentElement;
-          for (let d = 0; d < 8 && el; d++) {
-            const inp = el.querySelector('input') ||
-                        (el.shadowRoot && el.shadowRoot.querySelector('input'));
-            if (inp && !inp.readOnly && !inp.disabled) {
-              setInputValue(inp, slAmount); slSet = true; break;
-            }
-            el = el.parentElement;
-          }
-        }
-      }
-    }
-
-    // 5. Last resort: use last two visible inputs (TP before SL in XM's form order)
+    // 4. Last resort: all editable inputs on page
     if (!tpSet && !slSet) {
-      const allInputs = deepQueryAll('input[type="text"], input[type="number"], input:not([type])')
-        .filter(el => !el.readOnly && !el.disabled);
-      console.log('[AlgoX] Last resort: found', allInputs.length, 'inputs');
-      allInputs.forEach((inp, i) => console.log(`  [${i}]`, inp.placeholder, inp.name, inp.id, 'vis:', inp.offsetParent !== null));
+      const allInputs = Array.from(document.querySelectorAll('input[type="text"], input[type="number"], input:not([type])'))
+        .filter(el => !el.readOnly && !el.disabled && el.type !== 'checkbox');
+      console.log('[AlgoX] Last resort:', allInputs.length, 'inputs');
       if (allInputs.length >= 2) {
-        setInputValue(allInputs[allInputs.length - 2], tpAmount);
-        setInputValue(allInputs[allInputs.length - 1], slAmount);
-        tpSet = true; slSet = true;
+        setInputValue(allInputs[allInputs.length - 2], tpAmount); tpSet = true;
+        setInputValue(allInputs[allInputs.length - 1], slAmount); slSet = true;
       }
     }
 
@@ -485,7 +451,12 @@
   // "Place Order at X.XX" button at the bottom of the form — final submit with TP/SL.
 
   function findPlaceOrderButton() {
-    const allBtns = deepQueryAll('button, ion-button, [role="button"], div[class], span[class], a');
+    // CONFIRMED XM selector: xm-trade-button-filled button[type="submit"]
+    const confirmed = document.querySelector('xm-trade-button-filled button[type="submit"]');
+    if (confirmed && !confirmed.disabled) return confirmed;
+
+    // Fallback: text content match
+    const allBtns = deepQueryAll('button, ion-button, [role="button"]');
     const isDisabled = (el) => {
       if (el.disabled) return true;
       if (el.getAttribute('aria-disabled') === 'true') return true;
@@ -497,7 +468,7 @@
       const text = String(el.textContent).trim().toUpperCase();
       return text.startsWith('PLACE ORDER') || text.startsWith('CONFIRM ORDER');
     });
-    return btn || null;
+    return btn || confirmed || null;
   }
 
   // ---- BUY/SELL Button Finding (legacy — kept for fallback) ----
@@ -625,8 +596,8 @@
       dispatchClick(sideBtn);
       await delay(500); // wait for the form to reflect the selected side
 
-      // ── Step 2: Enable TP/SL toggle if it's off ─────────────────────────────────
-      const tpSlStatus = await enableToggleByLabel('TP/SL');
+      // ── Step 2: Enable TP/SL toggle (confirmed: xm-ion-toggle[formcontrolname="isShowTpSl"])
+      const tpSlStatus = await enableTpSlToggle();
       console.log('[AlgoX] TP/SL toggle status:', tpSlStatus);
       await delay(300);
 
