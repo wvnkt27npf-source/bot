@@ -1,0 +1,531 @@
+content.js:639 [AlgoX] Content script loaded on https://my.xm.com/symbol-info/ETHUSD%23
+content.js:70 [AlgoX] Scanning page...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 Array(0)
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 Array(0)
+content.js:238 [AlgoX DIAG] role=tab count: 14 Array(14)
+content.js:243 [AlgoX DIAG] input count: 4 Array(4)
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 Array(0)
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 1/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 Array(0)
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 Array(0)
+content.js:238 [AlgoX DIAG] role=tab count: 14 Array(14)
+content.js:243 [AlgoX DIAG] input count: 4 Array(4)
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 Array(0)
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 2/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 Array(0)
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 Array(0)
+content.js:238 [AlgoX DIAG] role=tab count: 14 Array(14)
+content.js:243 [AlgoX DIAG] input count: 4 Array(4)
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 Array(0)
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 3/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 Array(0)
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 Array(0)
+content.js:238 [AlgoX DIAG] role=tab count: 14 Array(14)
+content.js:243 [AlgoX DIAG] input count: 4 Array(4)
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 Array(0)
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 4/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 Array(0)
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 Array(0)
+content.js:238 [AlgoX DIAG] role=tab count: 14 Array(14)
+content.js:243 [AlgoX DIAG] input count: 4 Array(4)
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 Array(0)
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 5/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 Array(0)
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 Array(0)
+content.js:238 [AlgoX DIAG] role=tab count: 14 Array(14)
+content.js:243 [AlgoX DIAG] input count: 4 Array(4)
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 Array(0)
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 6/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 []
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 []
+content.js:238 [AlgoX DIAG] role=tab count: 14 (14) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+content.js:243 [AlgoX DIAG] input count: 4 (4) [{…}, {…}, {…}, {…}]
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 []
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 7/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 []
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 []
+content.js:238 [AlgoX DIAG] role=tab count: 14 (14) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+content.js:243 [AlgoX DIAG] input count: 4 (4) [{…}, {…}, {…}, {…}]
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 []
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 8/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 []
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 []
+content.js:238 [AlgoX DIAG] role=tab count: 14 (14) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+content.js:243 [AlgoX DIAG] input count: 4 (4) [{…}, {…}, {…}, {…}]
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 []
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 9/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 []
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 []
+content.js:238 [AlgoX DIAG] role=tab count: 14 (14) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+content.js:243 [AlgoX DIAG] input count: 4 (4) [{…}, {…}, {…}, {…}]
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 []
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 10/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 []
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 []
+content.js:238 [AlgoX DIAG] role=tab count: 14 (14) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+content.js:243 [AlgoX DIAG] input count: 4 (4) [{…}, {…}, {…}, {…}]
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 []
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 11/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 []
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 []
+content.js:238 [AlgoX DIAG] role=tab count: 14 (14) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+content.js:243 [AlgoX DIAG] input count: 4 (4) [{…}, {…}, {…}, {…}]
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 []
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 12/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 []
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 []
+content.js:238 [AlgoX DIAG] role=tab count: 14 (14) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+content.js:243 [AlgoX DIAG] input count: 4 (4) [{…}, {…}, {…}, {…}]
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 []
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 13/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 []
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 []
+content.js:238 [AlgoX DIAG] role=tab count: 14 (14) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+content.js:243 [AlgoX DIAG] input count: 4 (4) [{…}, {…}, {…}, {…}]
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 []
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 14/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 []
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 []
+content.js:238 [AlgoX DIAG] role=tab count: 14 (14) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+content.js:243 [AlgoX DIAG] input count: 4 (4) [{…}, {…}, {…}, {…}]
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 []
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 15/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 []
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 []
+content.js:238 [AlgoX DIAG] role=tab count: 14 (14) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+content.js:243 [AlgoX DIAG] input count: 4 (4) [{…}, {…}, {…}, {…}]
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 []
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 16/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 []
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 []
+content.js:238 [AlgoX DIAG] role=tab count: 14 (14) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+content.js:243 [AlgoX DIAG] input count: 4 (4) [{…}, {…}, {…}, {…}]
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 []
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 17/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 []
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 []
+content.js:238 [AlgoX DIAG] role=tab count: 14 (14) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+content.js:243 [AlgoX DIAG] input count: 4 (4) [{…}, {…}, {…}, {…}]
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 []
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 18/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 []
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 []
+content.js:238 [AlgoX DIAG] role=tab count: 14 (14) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+content.js:243 [AlgoX DIAG] input count: 4 (4) [{…}, {…}, {…}, {…}]
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 []
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 19/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 []
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 []
+content.js:238 [AlgoX DIAG] role=tab count: 14 (14) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+content.js:243 [AlgoX DIAG] input count: 4 (4) [{…}, {…}, {…}, {…}]
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 []
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Retry 20/20...
+content.js:228 [AlgoX DIAG] ion-segment count: 0 []
+content.js:233 [AlgoX DIAG] ion-segment-button count: 0 []
+content.js:238 [AlgoX DIAG] role=tab count: 14 (14) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+content.js:243 [AlgoX DIAG] input count: 4 (4) [{…}, {…}, {…}, {…}]
+content.js:248 [AlgoX DIAG] ion-input/xm-ion-input count: 0 []
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 1 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 2 )
+content.js:309 [AlgoX] Amount tab button not found in DOM (attempt 3 )
+content.js:319 [AlgoX] Amount tab active after attempts: false
+content.js:382 [AlgoX] Scanning 0 ion-input/xm-ion-input wrappers for TP/SL
+content.js:430 [AlgoX] Last resort: found 1 inputs
+content.js:70 [AlgoX] Waiting for TP/SL inputs...
+content.js:70 [AlgoX] Manual: Place BUY order
+TP: $2 | SL: $2
+content.js:620 [AlgoX] button_not_found — DOM dump (first 50 short elements): [
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg active ng-star-inserted",
+    "text": "Popular"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "Forex"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "Stocks CFDs"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "Equity Indices"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "Thematic Indices"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "Commodities"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "Cryptocurrencies"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "Top Gainers"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "Top Losers"
+  },
+  {
+    "tag": "BUTTON",
+    "cls": "flex-shrink-0 text-nowrap size-32 tab-solid-bg ng-star-inserted",
+    "text": "My Watchlist"
+  },
+  {
+    "tag": "DIV",
+    "cls": "ng-star-inserted",
+    "text": "⁦GOLD.i#⁩ 4,655.43 GOLD+0.11%"
+  },
+  {
+    "tag": "DIV",
+    "cls": "grid grid-cols-[1fr_auto] grid-rows-[1fr_auto] gap-x-1 me-0 text-text-1000",
+    "text": "⁦GOLD.i#⁩ 4,655.43 GOLD+0.11%"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md truncate item-title",
+    "text": "⁦GOLD.i#⁩"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md text-end ng-star-inserted",
+    "text": "4,655.43"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "text-end text-sm text-green-500 ng-star-inserted",
+    "text": "+0.11%"
+  },
+  {
+    "tag": "DIV",
+    "cls": "ng-star-inserted",
+    "text": "⁦BTCUSD#⁩ 68,557.30 Bitcoin vs"
+  },
+  {
+    "tag": "DIV",
+    "cls": "grid grid-cols-[1fr_auto] grid-rows-[1fr_auto] gap-x-1 me-0 text-text-1000",
+    "text": "⁦BTCUSD#⁩ 68,557.30 Bitcoin vs"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md truncate item-title",
+    "text": "⁦BTCUSD#⁩"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md text-end ng-star-inserted",
+    "text": "68,557.30"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "text-end text-sm text-red-600 ng-star-inserted",
+    "text": "-1.81%"
+  },
+  {
+    "tag": "DIV",
+    "cls": "ng-star-inserted",
+    "text": "⁦USDJPY#⁩ 159.780 US Dollar vs"
+  },
+  {
+    "tag": "DIV",
+    "cls": "grid grid-cols-[1fr_auto] grid-rows-[1fr_auto] gap-x-1 me-0 text-text-1000",
+    "text": "⁦USDJPY#⁩ 159.780 US Dollar vs"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md truncate item-title",
+    "text": "⁦USDJPY#⁩"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md text-end ng-star-inserted",
+    "text": "159.780"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "text-end text-sm text-green-500 ng-star-inserted",
+    "text": "+0.07%"
+  },
+  {
+    "tag": "DIV",
+    "cls": "ng-star-inserted",
+    "text": "⁦EURUSD#⁩ 1.15440 Euro vs US D"
+  },
+  {
+    "tag": "DIV",
+    "cls": "grid grid-cols-[1fr_auto] grid-rows-[1fr_auto] gap-x-1 me-0 text-text-1000",
+    "text": "⁦EURUSD#⁩ 1.15440 Euro vs US D"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md truncate item-title",
+    "text": "⁦EURUSD#⁩"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md text-end ng-star-inserted",
+    "text": "1.15440"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "text-end text-sm ng-star-inserted text-green-500",
+    "text": "+0.02%"
+  },
+  {
+    "tag": "DIV",
+    "cls": "ng-star-inserted",
+    "text": "⁦US100Cash#⁩ 24,066.02 US 100 "
+  },
+  {
+    "tag": "DIV",
+    "cls": "grid grid-cols-[1fr_auto] grid-rows-[1fr_auto] gap-x-1 me-0 text-text-1000",
+    "text": "⁦US100Cash#⁩ 24,066.02 US 100 "
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md truncate item-title",
+    "text": "⁦US100Cash#⁩"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md text-end ng-star-inserted",
+    "text": "24,066.02"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "text-end text-sm text-red-600 ng-star-inserted",
+    "text": "-0.46%"
+  },
+  {
+    "tag": "DIV",
+    "cls": "ng-star-inserted",
+    "text": "⁦ETHUSD#⁩ 2,101.99 Ethereum vs"
+  },
+  {
+    "tag": "DIV",
+    "cls": "grid grid-cols-[1fr_auto] grid-rows-[1fr_auto] gap-x-1 me-0 text-text-1000",
+    "text": "⁦ETHUSD#⁩ 2,101.99 Ethereum vs"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md truncate item-title",
+    "text": "⁦ETHUSD#⁩"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md text-end ng-star-inserted",
+    "text": "2,101.99"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "text-end text-sm text-red-600 ng-star-inserted",
+    "text": "-2.11%"
+  },
+  {
+    "tag": "DIV",
+    "cls": "ng-star-inserted",
+    "text": "⁦JP225Cash#⁩ 53,487 Japan 225 "
+  },
+  {
+    "tag": "DIV",
+    "cls": "grid grid-cols-[1fr_auto] grid-rows-[1fr_auto] gap-x-1 me-0 text-text-1000",
+    "text": "⁦JP225Cash#⁩ 53,487 Japan 225 "
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md truncate item-title",
+    "text": "⁦JP225Cash#⁩"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md text-end ng-star-inserted",
+    "text": "53,487"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "text-end text-sm text-red-600 ng-star-inserted",
+    "text": "-0.73%"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md truncate item-title",
+    "text": "⁦GBPUSD#⁩"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "font-semibold text-md text-end ng-star-inserted",
+    "text": "1.32448"
+  },
+  {
+    "tag": "SPAN",
+    "cls": "text-end text-sm text-green-500 ng-star-inserted",
+    "text": "+0.09%"
+  },
+  {
+    "tag": "DIV",
+    "cls": "ng-star-inserted",
+    "text": "⁦SILVER.i#⁩SILVER"
+  },
+  {
+    "tag": "DIV",
+    "cls": "grid grid-cols-[1fr_auto] grid-rows-[1fr_auto] gap-x-1 me-0 text-text-1000",
+    "text": "⁦SILVER.i#⁩SILVER"
+  }
+]
+executeTrade @ content.js:620
+content.js:621 [AlgoX] Page URL: https://my.xm.com/symbol-info/ETHUSD%23
+executeTrade @ content.js:621

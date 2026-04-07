@@ -12,6 +12,10 @@
   }
   window.__algoxTraderLoaded = true;
 
+  // Frame detection — XM embeds the trade panel in an <iframe>; main frame = sidebar only
+  const isMainFrame = window === window.top;
+  const frameLabel  = isMainFrame ? 'MAIN-FRAME' : 'IFRAME';
+
   let currentOverlay = null;
 
   // ---- Overlay UI ----
@@ -223,6 +227,7 @@
 
   // ---- Diagnostic dump (runs once at start of each trade) ----
   function diagnosticDump() {
+    console.log('[AlgoX DIAG] Frame:', frameLabel, '| URL:', window.location.href);
     // 1. ion-segment elements (Ionic tab groups — TP/SL type selector is one of these)
     const segs = deepQueryAll('ion-segment');
     console.log('[AlgoX DIAG] ion-segment count:', segs.length,
@@ -627,14 +632,21 @@
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'PLACE_TRADE') {
+      if (isMainFrame) {
+        // Main frame has no trading panel — let the iframe handle it.
+        // Do NOT call sendResponse so the iframe's response wins.
+        console.log('[AlgoX][MAIN-FRAME] Skipping PLACE_TRADE — trading panel is in iframe');
+        return false;
+      }
       const { action, tpAmount, slAmount } = msg;
+      console.log('[AlgoX][IFRAME] Handling PLACE_TRADE', action, 'from', window.location.href);
       executeTrade(action, tpAmount, slAmount).then(sendResponse);
       return true; // keep channel open for async response
     }
     if (msg.type === 'PING') {
-      sendResponse({ ready: true, url: window.location.href });
+      sendResponse({ ready: true, url: window.location.href, frame: frameLabel });
     }
   });
 
-  console.log('[AlgoX] Content script loaded on', window.location.href);
+  console.log('[AlgoX][' + frameLabel + '] Content script loaded on', window.location.href);
 })();

@@ -11,7 +11,8 @@
     "notifications"
   ],
   "host_permissions": [
-    "https://my.xm.com/*"
+    "https://my.xm.com/*",
+    "https://*.xm.com/*"
   ],
   "optional_host_permissions": [
     "*://*/*"
@@ -36,9 +37,10 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://my.xm.com/symbol-info/*"],
+      "matches": ["https://my.xm.com/*", "https://*.xm.com/*"],
       "js": ["content.js"],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": true
     }
   ]
 }

@@ -107,7 +107,7 @@ async function sendTradeToContentScript(tabId, action, tpAmount, slAmount) {
   if (needsInject) {
     console.log('[AlgoX] Content script not found — injecting programmatically and retrying');
     try {
-      await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
+      await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] });
       await new Promise((r) => setTimeout(r, 600)); // let script initialise
     } catch (e) {
       console.warn('[AlgoX] Script injection failed:', e);
