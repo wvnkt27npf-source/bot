@@ -252,6 +252,15 @@
     const ionInputs = deepQueryAll('ion-input, xm-ion-input');
     console.log('[AlgoX DIAG] ion-input/xm-ion-input count:', ionInputs.length,
       ionInputs.map(i => ({ tag: i.tagName, label: String(i.label ?? i.getAttribute('label') ?? ''), cls: String(i.className).substring(0, 60) })));
+
+    // 6. ion-button elements (Ionic custom buttons — used by XM for BUY/SELL)
+    const ionBtns = deepQueryAll('ion-button');
+    console.log('[AlgoX DIAG] ion-button count:', ionBtns.length,
+      ionBtns.map(b => ({ txt: String(b.textContent).trim().substring(0, 40), cls: String(b.className).substring(0, 60) })));
+
+    // 7. Total DOM element count (sanity check — 0 = wrong frame / not rendered)
+    const totalEls = document.querySelectorAll('*').length;
+    console.log('[AlgoX DIAG] Total DOM elements:', totalEls);
   }
 
   // ---- Amount Tab Detection & Switching ----
@@ -452,7 +461,7 @@
 
   function isLikelyClickable(el) {
     const tag = el.tagName;
-    if (['BUTTON', 'A'].includes(tag)) return true;
+    if (['BUTTON', 'A', 'ION-BUTTON'].includes(tag)) return true;
     if (el.getAttribute('role') === 'button') return true;
     const cls = (el.className || '').toString().toLowerCase();
     return cls.includes('btn') || cls.includes('button') || cls.includes('action') || cls.includes('click');
@@ -465,7 +474,8 @@
 
     // Priority 1 (HIGHEST): "Place Order at X" — this submits the form WITH TP/SL
     // Skip if disabled (TP/SL validation still failing) — retry loop will wait for it to enable
-    const allElements = deepQueryAll('button, [role="button"], div[class], span[class], a');
+    // ion-button = Ionic custom element used by XM (its light-DOM text is accessible)
+    const allElements = deepQueryAll('button, ion-button, [role="button"], div[class], span[class], a');
     const isDisabled = (el) => {
       if (el.disabled) return true;
       if (el.getAttribute('aria-disabled') === 'true') return true;
@@ -500,7 +510,7 @@
 
     // Priority 4: broad text scan — BUY/SELL price button at top of XM panel
     // Must be short text (price button, not a label like "Buy When Price is")
-    const allClickable = deepQueryAll('button, [role="button"], a, div[class], span[class]');
+    const allClickable = deepQueryAll('button, ion-button, [role="button"], a, div[class], span[class]');
 
     // 4a: first child text node starts with BUY/SELL and element seems clickable
     btn = allClickable.find((el) => {
@@ -544,6 +554,16 @@
     // This ensures any step that failed due to lazy DOM rendering is retried.
     const attempt = async (attemptNum) => {
       setStatus(attemptNum === 0 ? 'Scanning page...' : `Retry ${attemptNum}/20...`);
+
+      // Fast bail: if this frame has almost no DOM elements it's not the trading panel frame.
+      // Give up to 2 attempts for lazy-render, then bail — prevents wasting 10s per wrong frame.
+      if (attemptNum >= 2) {
+        const totalEls = document.querySelectorAll('*').length;
+        if (totalEls < 10) {
+          console.warn('[AlgoX][' + frameLabel + '] DOM has only', totalEls, 'elements — not the trading panel frame, bailing');
+          return 'empty_dom';
+        }
+      }
 
       // Step 1: Enable "One Click Order" toggle (XM requirement)
       const oneClickStatus = await enableToggleByLabel('One Click Order');
@@ -598,7 +618,8 @@
     };
 
     // First attempt immediately
-    if (await attempt(0)) {
+    const r0 = await attempt(0);
+    if (r0 === true) {
       setTimeout(() => removeExistingOverlay(), 5000);
       return { success: true, method: 'immediate' };
     }
@@ -606,7 +627,13 @@
     // Retry loop — all prerequisite steps are retried in each iteration
     for (let i = 1; i <= 20; i++) {
       await delay(500);
-      if (await attempt(i)) {
+      const ri = await attempt(i);
+      if (ri === 'empty_dom') {
+        // This frame has no DOM — bail immediately, let next frame handle it
+        removeExistingOverlay();
+        return { success: false, reason: 'empty_dom_frame' };
+      }
+      if (ri === true) {
         setTimeout(() => removeExistingOverlay(), 5000);
         return { success: true, method: 'retry', attempt: i };
       }
@@ -617,7 +644,7 @@
     setTimeout(() => removeExistingOverlay(), 20000);
 
     // DOM diagnostic: log all buttons/clickables (incl. shadow DOM) to help debug selector issues
-    const allElements = deepQueryAll('button, [role="button"], div[class], span[class], a');
+    const allElements = deepQueryAll('button, ion-button, [role="button"], div[class], span[class], a');
     const dump = allElements
       .filter((el) => el.textContent.trim().length > 0 && el.textContent.trim().length < 50)
       .map((el) => ({ tag: el.tagName, cls: el.className.toString().slice(0, 80), text: el.textContent.trim().slice(0, 30) }))
@@ -632,19 +659,14 @@
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'PLACE_TRADE') {
-      if (isMainFrame) {
-        // Main frame has no trading panel — let the blob iframe handle it.
-        console.log('[AlgoX][MAIN-FRAME] Skipping PLACE_TRADE — trading panel is in blob iframe');
-        return false;
-      }
-      // Skip about:blank and empty-URL frames — they have no trading panel
+      // Skip about:blank and data: frames immediately — they have no trading panel DOM
       const href = window.location.href;
       if (!href || href === 'about:blank' || href.startsWith('data:')) {
-        console.log('[AlgoX][IFRAME] Skipping PLACE_TRADE — about:blank frame, no trading panel');
+        console.log('[AlgoX][' + frameLabel + '] Skipping PLACE_TRADE — about:blank/data frame');
         return false;
       }
       const { action, tpAmount, slAmount } = msg;
-      console.log('[AlgoX][IFRAME] Handling PLACE_TRADE', action, 'from', href);
+      console.log('[AlgoX][' + frameLabel + '] Handling PLACE_TRADE', action, 'from', href);
       executeTrade(action, tpAmount, slAmount).then(sendResponse);
       return true; // keep channel open for async response
     }
