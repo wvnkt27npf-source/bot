@@ -338,5 +338,54 @@ input:checked + .slider:before {
 }
 .dashboard-link:hover { color: #60a5fa; }
 
+/* Reverse Mode Section */
+.reverse-section {
+  background: transparent;
+  transition: background 0.3s;
+}
+
+.reverse-section.reverse-active {
+  background: rgba(245, 158, 11, 0.06);
+  border-bottom-color: rgba(245, 158, 11, 0.2);
+}
+
+.reverse-label {
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.reverse-icon {
+  font-size: 15px;
+  color: #94a3b8;
+}
+
+.reverse-section.reverse-active .reverse-icon {
+  color: #f59e0b;
+}
+
+.reverse-section.reverse-active .toggle-label {
+  color: #fbbf24;
+}
+
+/* Reverse slider — amber/orange when checked */
+input:checked + .slider.slider-reverse {
+  background: #f59e0b;
+}
+
+/* Signal reversed badge */
+.signal-reversed {
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 4px;
+  padding: 1px 6px;
+  display: inline-block;
+}
+
 /* Utility */
 .hidden { display: none !important; }

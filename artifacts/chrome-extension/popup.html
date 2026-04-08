@@ -38,7 +38,7 @@
       <p class="hint">Your Replit app URL (without trailing slash)</p>
     </div>
 
-    <!-- Toggle Row -->
+    <!-- Auto Trading Toggle -->
     <div class="section">
       <div class="toggle-row">
         <div>
@@ -48,6 +48,22 @@
         <label class="switch">
           <input type="checkbox" id="enabledToggle" checked />
           <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Reverse Mode Toggle -->
+    <div class="section reverse-section" id="reverseModeSection">
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label reverse-label">
+            <span class="reverse-icon">⇄</span> Reverse Mode
+          </div>
+          <div class="toggle-sublabel" id="reverseSublabel">BUY signal → BUY order (normal)</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="reverseModeToggle" />
+          <span class="slider slider-reverse"></span>
         </label>
       </div>
     </div>
@@ -66,6 +82,7 @@
             <span id="sigPrice"></span>
             <span id="sigTime"></span>
           </div>
+          <div class="signal-reversed hidden" id="sigReversed">⇄ Order reversed</div>
         </div>
       </div>
     </div>

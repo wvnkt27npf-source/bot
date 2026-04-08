@@ -12,10 +12,11 @@ let lastSignalId = null;
 
 async function getConfig() {
   return new Promise((resolve) => {
-    chrome.storage.local.get(['serverUrl', 'enabled'], (result) => {
+    chrome.storage.local.get(['serverUrl', 'enabled', 'reverseMode'], (result) => {
       resolve({
         serverUrl: (result.serverUrl || '').replace(/\/$/, ''),
-        enabled: result.enabled !== false // default true
+        enabled: result.enabled !== false,
+        reverseMode: result.reverseMode === true
       });
     });
   });
@@ -25,6 +26,12 @@ async function saveStatus(status) {
   return new Promise((resolve) => {
     chrome.storage.local.set(status, resolve);
   });
+}
+
+// Flip action if reverse mode is on
+function applyReverseMode(action, reverseMode) {
+  if (!reverseMode) return action;
+  return action === 'BUY' ? 'SELL' : 'BUY';
 }
 
 // ----- API Helpers -----
@@ -41,21 +48,20 @@ async function apiFetch(serverUrl, path, options = {}) {
 
 // ----- Tab Management -----
 
-async function openOrReuseTab(url) {
+// Always open a brand-new tab (never reuse) so each signal gets a clean page load
+async function openNewTab(url) {
   return new Promise((resolve) => {
-    const urlPattern = url.split('?')[0];
-    chrome.tabs.query({ url: 'https://my.xm.com/symbol-info/*' }, (tabs) => {
-      const existing = tabs.find((t) => t.url && t.url.startsWith(urlPattern));
-      if (existing) {
-        chrome.tabs.update(existing.id, { url, active: true }, () => {
-          chrome.windows.update(existing.windowId, { focused: true });
-          resolve(existing.id);
-        });
-      } else {
-        chrome.tabs.create({ url, active: true }, (tab) => resolve(tab.id));
-      }
-    });
+    chrome.tabs.create({ url, active: true }, (tab) => resolve(tab.id));
   });
+}
+
+// Close a tab safely — ignores errors if already closed
+function closeTab(tabId) {
+  try {
+    chrome.tabs.remove(tabId, () => {
+      if (chrome.runtime.lastError) {} // already closed — fine
+    });
+  } catch (_) {}
 }
 
 async function waitForTabReady(tabId) {
@@ -71,6 +77,24 @@ async function waitForTabReady(tabId) {
   });
 }
 
+// Reload a tab and wait for it to be ready again
+async function reloadAndWait(tabId) {
+  return new Promise((resolve) => {
+    chrome.tabs.reload(tabId, {}, () => {
+      setTimeout(() => {
+        const check = () => {
+          chrome.tabs.get(tabId, (tab) => {
+            if (chrome.runtime.lastError || !tab) return resolve();
+            if (tab.status === 'complete') return resolve();
+            setTimeout(check, 500);
+          });
+        };
+        check();
+      }, 1500); // give it 1.5s before we start polling status
+    });
+  });
+}
+
 // ----- Trade Execution via Content Script -----
 // All DOM interaction is handled in content.js; we communicate via message passing.
 // XM embeds its trading panel inside a blob: URL iframe — we must target it directly.
@@ -80,7 +104,6 @@ function getAllFrames(tabId) {
   return new Promise((resolve) => {
     chrome.webNavigation.getAllFrames({ tabId }, (frames) => {
       if (chrome.runtime.lastError || !frames) { resolve([]); return; }
-      // Sort: non-main frames first (frameId !== 0), then main frame
       resolve(frames.sort((a, b) => (a.frameId === 0 ? 1 : 0) - (b.frameId === 0 ? 1 : 0)));
     });
   });
@@ -98,39 +121,32 @@ function sendToFrame(tabId, frameId, msg) {
   });
 }
 
-// Inject content.js into every frame (handles blob: URL iframes — match_origin_as_fallback
-// covers automatic injection, but programmatic injection is a belt-and-suspenders fallback)
+// Inject content.js into every frame (handles blob: URL iframes)
 async function injectAllFrames(tabId) {
   try {
     await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] });
   } catch (e) {
     console.warn('[AlgoX] allFrames injection error (non-fatal):', e.message);
   }
-  // Also try frame-by-frame in case some frames need separate targeting
   const frames = await getAllFrames(tabId);
   for (const f of frames) {
     try {
       await chrome.scripting.executeScript({ target: { tabId, frameIds: [f.frameId] }, files: ['content.js'] });
-    } catch (_) { /* frame may reject injection — normal for sandbox/cross-origin */ }
+    } catch (_) {}
   }
   console.log('[AlgoX] Injected into', frames.length, 'frames');
 }
 
-// Send PLACE_TRADE across all frames; first frame that returns success: true wins.
-// Priority order: blob: frames first (XM trading panel), then other non-main frames, main last.
-// about:blank / data: frames are skipped entirely (no trading panel there).
+// Send PLACE_TRADE across all frames; blob: frames first (XM trading panel)
 async function broadcastTrade(tabId, action, tpAmount, slAmount) {
   const allFrames = await getAllFrames(tabId);
-
-  // Filter out blank/data frames — their content scripts will skip anyway, but this saves time
   const usableFrames = allFrames.filter(f => f.url && f.url !== 'about:blank' && !f.url.startsWith('data:'));
 
-  // Sort: blob: frames first (trading panel), then other iframes, then main frame
   usableFrames.sort((a, b) => {
     const score = (f) => {
-      if (f.url.startsWith('blob:')) return 0;  // highest priority
-      if (f.frameId !== 0) return 1;             // other iframes
-      return 2;                                   // main frame (last resort)
+      if (f.url.startsWith('blob:')) return 0;
+      if (f.frameId !== 0) return 1;
+      return 2;
     };
     return score(a) - score(b);
   });
@@ -145,25 +161,22 @@ async function broadcastTrade(tabId, action, tpAmount, slAmount) {
     console.log('[AlgoX] Trying frameId', frame.frameId, frame.url.substring(0, 70));
     const res = await sendToFrame(tabId, frame.frameId, msg);
     if (res && res.success) {
-      console.log('[AlgoX] SUCCESS from frameId', frame.frameId, frame.url.substring(0, 80));
+      console.log('[AlgoX] SUCCESS from frameId', frame.frameId);
       return res;
     }
-    if (res) lastResult = res; // keep last non-null response for diagnostics
+    if (res) lastResult = res;
     console.log('[AlgoX] Frame', frame.frameId, 'response:', JSON.stringify(res));
   }
   return lastResult;
 }
 
 async function sendTradeToContentScript(tabId, action, tpAmount, slAmount) {
-  // Step 1: Inject into all frames (noop if already injected due to double-load guard)
   await injectAllFrames(tabId);
-  await new Promise((r) => setTimeout(r, 600)); // let scripts initialise
-
-  // Step 2: Broadcast to all frames, collect first success
+  await new Promise((r) => setTimeout(r, 800)); // let scripts initialise
   return broadcastTrade(tabId, action, tpAmount, slAmount);
 }
 
-// ----- Extension Heartbeat (lets dashboard show "Extension Connected") -----
+// ----- Extension Heartbeat -----
 
 async function sendHeartbeat() {
   const { serverUrl } = await getConfig();
@@ -181,7 +194,7 @@ async function sendHeartbeat() {
 async function poll() {
   if (isProcessing) return;
 
-  const { serverUrl, enabled } = await getConfig();
+  const { serverUrl, enabled, reverseMode } = await getConfig();
   if (!serverUrl) {
     await saveStatus({ connectionStatus: 'no_url' });
     return;
@@ -201,20 +214,27 @@ async function poll() {
     }
 
     const { signal } = await apiFetch(serverUrl, '/signals/latest');
-
     if (!signal || signal.id === lastSignalId) return;
 
     console.log('[AlgoX] New signal received:', signal);
     isProcessing = true;
     lastSignalId = signal.id;
 
+    // Apply reverse mode — flip direction if enabled
+    const finalAction = applyReverseMode(signal.action, reverseMode);
+    if (reverseMode) {
+      console.log('[AlgoX] Reverse mode ON — flipping', signal.action, '→', finalAction);
+    }
+
     await saveStatus({
       lastSignal: {
         id: signal.id,
         symbol: signal.symbol,
-        action: signal.action,
+        action: signal.action,      // store original signal direction
+        finalAction,                 // store what was actually placed
         price: signal.price,
-        time: signal.createdAt
+        time: signal.createdAt,
+        reversed: reverseMode
       },
       processingStatus: 'opening_tab'
     });
@@ -232,22 +252,33 @@ async function poll() {
       return;
     }
 
-    const tabId = await openOrReuseTab(symbolEntry.xmUrl);
+    // Always open a FRESH tab — never reuse to avoid race conditions
+    const tabId = await openNewTab(symbolEntry.xmUrl);
 
     await waitForTabReady(tabId);
-    await new Promise((r) => setTimeout(r, 2000)); // let XM JS initialize
+    // Wait generously for XM's Angular app to fully initialise (SPA frameworks are slow)
+    await new Promise((r) => setTimeout(r, 4000));
 
     await saveStatus({ processingStatus: 'placing_order' });
 
-    // Delegate all DOM interaction to content.js via message passing
-    const tradeResult = await sendTradeToContentScript(
-      tabId,
-      signal.action,
-      settings.tpAmount,
-      settings.slAmount
+    // First attempt
+    let tradeResult = await sendTradeToContentScript(
+      tabId, finalAction, settings.tpAmount, settings.slAmount
     );
+    console.log('[AlgoX] First attempt result:', tradeResult);
 
-    console.log('[AlgoX] Trade result:', tradeResult);
+    // If failed — refresh the page and retry once
+    if (!tradeResult?.success) {
+      console.log('[AlgoX] Trade failed, refreshing page and retrying...');
+      await saveStatus({ processingStatus: 'refreshing_page' });
+      await reloadAndWait(tabId);
+      // Full wait again after refresh
+      await new Promise((r) => setTimeout(r, 4000));
+      tradeResult = await sendTradeToContentScript(
+        tabId, finalAction, settings.tpAmount, settings.slAmount
+      );
+      console.log('[AlgoX] Retry after refresh result:', tradeResult);
+    }
 
     await apiFetch(serverUrl, `/signals/${signal.id}/processed`, { method: 'PATCH' });
 
@@ -256,25 +287,31 @@ async function poll() {
       lastProcessed: Date.now(),
       lastTradeContext: {
         tabId,
-        action: signal.action,
+        action: finalAction,
+        originalAction: signal.action,
         tpAmount: settings.tpAmount,
         slAmount: settings.slAmount,
-        symbol: signal.symbol
+        symbol: signal.symbol,
+        xmUrl: symbolEntry.xmUrl
       }
     });
 
+    // Show desktop notification
     const notifOptions = {
       type: 'basic',
-      title: `AlgoX: ${signal.action} ${signal.symbol}`,
+      title: `AlgoX: ${finalAction} ${signal.symbol}${reverseMode ? ' (Reversed)' : ''}`,
       message: tradeResult?.success
         ? `Order placed. TP: $${settings.tpAmount} | SL: $${settings.slAmount}`
-        : `Please place the ${signal.action} order manually on XM.`
+        : `Please place the ${finalAction} order manually on XM.`
     };
     try {
       const iconUrl = chrome.runtime.getURL('icons/icon128.png');
       if (iconUrl) notifOptions.iconUrl = iconUrl;
     } catch (_) {}
     chrome.notifications.create(notifOptions);
+
+    // Auto-close the tab after 3 seconds
+    setTimeout(() => closeTab(tabId), 3000);
 
   } catch (err) {
     console.error('[AlgoX] Poll error:', err.message);
@@ -291,7 +328,6 @@ function startPolling() {
   poll();
   sendHeartbeat();
   pollingTimer = setInterval(poll, POLL_INTERVAL_MS);
-  // Heartbeat every 10 seconds (independent of signal polling)
   setInterval(sendHeartbeat, 10_000);
 }
 
@@ -306,62 +342,61 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     chrome.storage.local.get(null, (data) => sendResponse(data));
     return true;
   }
+
   if (msg.type === 'CONFIG_CHANGED') {
     lastSignalId = null;
     startPolling();
     sendResponse({ ok: true });
   }
+
   if (msg.type === 'TOGGLE_ENABLED') {
     chrome.storage.local.set({ enabled: msg.enabled }, () => sendResponse({ ok: true }));
     return true;
   }
+
+  if (msg.type === 'TOGGLE_REVERSE') {
+    chrome.storage.local.set({ reverseMode: msg.reverseMode }, () => sendResponse({ ok: true }));
+    return true;
+  }
+
   if (msg.type === 'TEST_TRADE') {
-    // Find any open XM tab and fire a test PLACE_TRADE directly — no signal polling needed
+    // Find any open XM tab — don't close it after test (user is watching)
     const { action } = msg;
-    chrome.storage.local.get(['lastTradeContext', 'serverUrl'], async (data) => {
-      // Look for any XM tab
-      chrome.tabs.query({ url: 'https://my.xm.com/*' }, async (tabs) => {
-        if (!tabs || tabs.length === 0) {
-          sendResponse({ success: false, reason: 'no_xm_tab' });
-          return;
-        }
+    chrome.tabs.query({ url: 'https://my.xm.com/*' }, async (tabs) => {
+      if (!tabs || tabs.length === 0) {
+        sendResponse({ success: false, reason: 'no_xm_tab' });
+        return;
+      }
+      const tabId = tabs[0].id;
+      chrome.tabs.update(tabId, { active: true });
+      chrome.tabs.get(tabId, (t) => {
+        if (t && t.windowId) chrome.windows.update(t.windowId, { focused: true });
+      });
+      await new Promise((r) => setTimeout(r, 300));
 
-        const tabId = tabs[0].id;
-        // Bring tab to front
-        chrome.tabs.update(tabId, { active: true });
-        chrome.tabs.get(tabId, (t) => {
-          if (t && t.windowId) chrome.windows.update(t.windowId, { focused: true });
-        });
-
-        await new Promise((r) => setTimeout(r, 300));
-
-        // Use stored TP/SL settings if available, otherwise defaults
-        chrome.storage.local.get(['serverUrl'], async (cfg) => {
-          let tpAmount = 2;
-          let slAmount = 2;
-          try {
-            const serverUrl = (cfg.serverUrl || '').replace(/\/$/, '');
-            if (serverUrl) {
-              const res = await fetch(`${serverUrl}/api/settings`);
-              if (res.ok) {
-                const settings = await res.json();
-                tpAmount = settings.tpAmount || 2;
-                slAmount = settings.slAmount || 2;
-              }
+      chrome.storage.local.get(['serverUrl'], async (cfg) => {
+        let tpAmount = 2;
+        let slAmount = 2;
+        try {
+          const serverUrl = (cfg.serverUrl || '').replace(/\/$/, '');
+          if (serverUrl) {
+            const res = await fetch(`${serverUrl}/api/settings`);
+            if (res.ok) {
+              const s = await res.json();
+              tpAmount = s.tpAmount || 2;
+              slAmount = s.slAmount || 2;
             }
-          } catch (_) {}
+          }
+        } catch (_) {}
 
-          await saveStatus({ processingStatus: 'placing_order' });
-          const tradeResult = await sendTradeToContentScript(tabId, action, tpAmount, slAmount);
-          console.log('[AlgoX] Test trade result:', tradeResult);
-
-          await saveStatus({
-            processingStatus: tradeResult?.success ? 'success' : 'manual_required',
-            lastProcessed: Date.now()
-          });
-
-          sendResponse(tradeResult || { success: false, reason: 'no_response' });
+        await saveStatus({ processingStatus: 'placing_order' });
+        const tradeResult = await sendTradeToContentScript(tabId, action, tpAmount, slAmount);
+        console.log('[AlgoX] Test trade result:', tradeResult);
+        await saveStatus({
+          processingStatus: tradeResult?.success ? 'success' : 'manual_required',
+          lastProcessed: Date.now()
         });
+        sendResponse(tradeResult || { success: false, reason: 'no_response' });
       });
     });
     return true;
@@ -374,30 +409,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
       await saveStatus({ processingStatus: 'retrying' });
 
-      // Try to reuse existing XM tab; fallback to any XM tab
-      const findTab = () => new Promise((resolve) => {
-        chrome.tabs.get(ctx.tabId, (tab) => {
-          if (!chrome.runtime.lastError && tab) return resolve(tab.id);
-          chrome.tabs.query({ url: 'https://my.xm.com/*' }, (tabs) => {
-            resolve(tabs.length > 0 ? tabs[0].id : null);
-          });
-        });
-      });
-
-      const tabId = await findTab();
-      if (!tabId) {
-        await saveStatus({ processingStatus: 'manual_required' });
-        sendResponse({ ok: false, reason: 'no_xm_tab' });
-        return;
-      }
-
-      // Bring XM tab to front
-      chrome.tabs.update(tabId, { active: true });
-      chrome.tabs.get(tabId, (t) => {
-        if (t && t.windowId) chrome.windows.update(t.windowId, { focused: true });
-      });
-
-      await new Promise((r) => setTimeout(r, 500));
+      // Open a fresh tab (original was auto-closed)
+      const xmUrl = ctx.xmUrl || 'https://my.xm.com/symbol-info/BTCUSD%23';
+      const tabId = await openNewTab(xmUrl);
+      await waitForTabReady(tabId);
+      await new Promise((r) => setTimeout(r, 4000));
 
       const tradeResult = await sendTradeToContentScript(tabId, ctx.action, ctx.tpAmount, ctx.slAmount);
       console.log('[AlgoX] Retry result:', tradeResult);
@@ -406,6 +422,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         processingStatus: tradeResult?.success ? 'success' : 'manual_required',
         lastProcessed: Date.now()
       });
+
+      // Auto-close after retry too
+      setTimeout(() => closeTab(tabId), 3000);
 
       sendResponse({ ok: true, tradeResult });
     });

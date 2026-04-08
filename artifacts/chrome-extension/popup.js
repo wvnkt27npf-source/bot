@@ -16,6 +16,7 @@ const PROCESSING_LABELS = {
   opening_tab: 'Opening XM page...',
   placing_order: 'Placing order...',
   retrying: 'Retrying trade...',
+  refreshing_page: 'Refreshing page, retrying...',
   success: 'Order placed! ✓',
   manual_required: 'Manual action needed',
   symbol_not_found: 'Symbol not configured'
@@ -33,6 +34,7 @@ function updateUI(data) {
   const {
     connectionStatus = 'connecting',
     enabled = true,
+    reverseMode = false,
     lastSignal,
     processingStatus = 'idle',
     lastPoll,
@@ -44,16 +46,20 @@ function updateUI(data) {
   const statusText = $('statusText');
   dot.className = 'status-dot ' + connectionStatus;
   statusText.textContent = STATUS_LABELS[connectionStatus] || connectionStatus;
+  if (connectionStatus === 'error' && lastError) statusText.title = lastError;
 
-  if (connectionStatus === 'error' && lastError) {
-    statusText.title = lastError;
-  }
-
-  // Toggle
+  // Auto trading toggle
   $('enabledToggle').checked = enabled;
   $('toggleSublabel').textContent = enabled
     ? 'Auto trading is active'
     : 'Auto trading is paused';
+
+  // Reverse mode toggle
+  const reverseToggle = $('reverseModeToggle');
+  reverseToggle.checked = reverseMode;
+  updateReverseSublabel(reverseMode);
+  const section = $('reverseModeSection');
+  section.classList.toggle('reverse-active', reverseMode);
 
   // Last signal
   if (lastSignal) {
@@ -61,10 +67,19 @@ function updateUI(data) {
     $('signalInfo').classList.remove('hidden');
     $('sigSymbol').textContent = lastSignal.symbol;
     const actionEl = $('sigAction');
-    actionEl.textContent = lastSignal.action;
-    actionEl.className = 'signal-action ' + lastSignal.action;
+    // Show the final action (what was actually placed)
+    const displayAction = lastSignal.finalAction || lastSignal.action;
+    actionEl.textContent = displayAction;
+    actionEl.className = 'signal-action ' + displayAction;
     $('sigPrice').textContent = lastSignal.price ? `$${Number(lastSignal.price).toLocaleString()}` : '';
     $('sigTime').textContent = timeAgo(lastSignal.time);
+    // Show "reversed" badge if reverse mode was active for this signal
+    const reversedEl = $('sigReversed');
+    if (lastSignal.reversed) {
+      reversedEl.classList.remove('hidden');
+    } else {
+      reversedEl.classList.add('hidden');
+    }
   } else {
     $('noSignal').classList.remove('hidden');
     $('signalInfo').classList.add('hidden');
@@ -83,7 +98,7 @@ function updateUI(data) {
     processingSection.style.display = 'none';
   }
 
-  // Show retry button when last signal exists and trade failed or succeeded (allow re-trade)
+  // Retry button
   const retrySection = $('retrySection');
   const showRetry = lastSignal && ['manual_required', 'success', 'symbol_not_found'].includes(processingStatus);
   retrySection.style.display = showRetry ? 'block' : 'none';
@@ -94,11 +109,18 @@ function updateUI(data) {
     : 'Last poll: never';
 }
 
+function updateReverseSublabel(reverseMode) {
+  $('reverseSublabel').textContent = reverseMode
+    ? 'BUY signal → SELL order (reversed!)'
+    : 'BUY signal → BUY order (normal)';
+}
+
 async function loadAndRender() {
-  chrome.storage.local.get(['serverUrl'], (result) => {
-    if (result.serverUrl) {
-      $('serverUrl').value = result.serverUrl;
-    }
+  chrome.storage.local.get(['serverUrl', 'reverseMode'], (result) => {
+    if (result.serverUrl) $('serverUrl').value = result.serverUrl;
+    $('reverseModeToggle').checked = result.reverseMode === true;
+    updateReverseSublabel(result.reverseMode === true);
+    if (result.reverseMode) $('reverseModeSection').classList.add('reverse-active');
   });
 
   chrome.runtime.sendMessage({ type: 'GET_STATUS' }, (data) => {
@@ -107,11 +129,10 @@ async function loadAndRender() {
   });
 }
 
-// Save server URL — also requests host permission for the configured origin
+// Save server URL
 $('saveBtn').addEventListener('click', () => {
   const url = $('serverUrl').value.trim().replace(/\/$/, '');
   if (!url) return;
-
   const saveAndNotify = () => {
     chrome.storage.local.set({ serverUrl: url }, () => {
       chrome.runtime.sendMessage({ type: 'CONFIG_CHANGED' }, () => {
@@ -121,12 +142,10 @@ $('saveBtn').addEventListener('click', () => {
       });
     });
   };
-
-  // Request optional host permission for this specific origin so fetch calls succeed
   try {
     const origin = new URL(url).origin + '/*';
-    chrome.permissions.request({ origins: [origin] }, (granted) => {
-      if (chrome.runtime.lastError) console.warn('[AlgoX] Permission request error:', chrome.runtime.lastError.message);
+    chrome.permissions.request({ origins: [origin] }, () => {
+      if (chrome.runtime.lastError) {}
       saveAndNotify();
     });
   } catch (_) {
@@ -134,14 +153,22 @@ $('saveBtn').addEventListener('click', () => {
   }
 });
 
-// Toggle auto trading
+// Auto trading toggle
 $('enabledToggle').addEventListener('change', (e) => {
   const enabled = e.target.checked;
   chrome.runtime.sendMessage({ type: 'TOGGLE_ENABLED', enabled }, () => {
-    $('toggleSublabel').textContent = enabled
-      ? 'Auto trading is active'
-      : 'Auto trading is paused';
+    $('toggleSublabel').textContent = enabled ? 'Auto trading is active' : 'Auto trading is paused';
     chrome.storage.local.set({ enabled });
+  });
+});
+
+// Reverse mode toggle
+$('reverseModeToggle').addEventListener('change', (e) => {
+  const reverseMode = e.target.checked;
+  chrome.storage.local.set({ reverseMode }, () => {
+    chrome.runtime.sendMessage({ type: 'TOGGLE_REVERSE', reverseMode }, () => {});
+    updateReverseSublabel(reverseMode);
+    $('reverseModeSection').classList.toggle('reverse-active', reverseMode);
   });
 });
 
@@ -199,7 +226,7 @@ function runTestTrade(action) {
       } else if (reason && reason.startsWith('inject_failed')) {
         statusEl.textContent = 'Cannot inject script — reload the XM tab and try again.';
       } else if (reason && reason.includes('Receiving end')) {
-        statusEl.textContent = 'Script not ready — retrying... try again in 2s.';
+        statusEl.textContent = 'Script not ready — try again in 2s.';
       } else {
         statusEl.textContent = `Failed: ${reason}`;
       }
@@ -212,17 +239,15 @@ function runTestTrade(action) {
 $('testBuyBtn').addEventListener('click', () => runTestTrade('BUY'));
 $('testSellBtn').addEventListener('click', () => runTestTrade('SELL'));
 
-// Open dashboard link
+// Open dashboard
 $('openDashboard').addEventListener('click', (e) => {
   e.preventDefault();
   chrome.storage.local.get(['serverUrl'], (result) => {
-    if (result.serverUrl) {
-      chrome.tabs.create({ url: result.serverUrl });
-    }
+    if (result.serverUrl) chrome.tabs.create({ url: result.serverUrl });
   });
 });
 
-// Poll storage for live updates while popup is open
+// Poll storage for live updates
 function pollStatus() {
   chrome.runtime.sendMessage({ type: 'GET_STATUS' }, (data) => {
     if (chrome.runtime.lastError || !data) return;
@@ -230,6 +255,5 @@ function pollStatus() {
   });
 }
 
-// Init
 loadAndRender();
 setInterval(pollStatus, 2000);
