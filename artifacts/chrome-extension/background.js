@@ -255,63 +255,74 @@ async function poll() {
     // Always open a FRESH tab — never reuse to avoid race conditions
     const tabId = await openNewTab(symbolEntry.xmUrl);
 
-    await waitForTabReady(tabId);
-    // Wait generously for XM's Angular app to fully initialise (SPA frameworks are slow)
-    await new Promise((r) => setTimeout(r, 4000));
+    // Track the tab so we can guarantee cleanup on any code path (exception or not)
+    let tabClosed = false;
+    const scheduleTabClose = (delay = 3000) => {
+      if (tabClosed) return;
+      tabClosed = true;
+      setTimeout(() => closeTab(tabId), delay);
+    };
 
-    await saveStatus({ processingStatus: 'placing_order' });
-
-    // First attempt
-    let tradeResult = await sendTradeToContentScript(
-      tabId, finalAction, settings.tpAmount, settings.slAmount
-    );
-    console.log('[AlgoX] First attempt result:', tradeResult);
-
-    // If failed — refresh the page and retry once
-    if (!tradeResult?.success) {
-      console.log('[AlgoX] Trade failed, refreshing page and retrying...');
-      await saveStatus({ processingStatus: 'refreshing_page' });
-      await reloadAndWait(tabId);
-      // Full wait again after refresh
+    try {
+      await waitForTabReady(tabId);
+      // Wait generously for XM's Angular app to fully initialise (SPA frameworks are slow)
       await new Promise((r) => setTimeout(r, 4000));
-      tradeResult = await sendTradeToContentScript(
+
+      await saveStatus({ processingStatus: 'placing_order' });
+
+      // First attempt
+      let tradeResult = await sendTradeToContentScript(
         tabId, finalAction, settings.tpAmount, settings.slAmount
       );
-      console.log('[AlgoX] Retry after refresh result:', tradeResult);
-    }
+      console.log('[AlgoX] First attempt result:', tradeResult);
 
-    await apiFetch(serverUrl, `/signals/${signal.id}/processed`, { method: 'PATCH' });
-
-    await saveStatus({
-      processingStatus: tradeResult?.success ? 'success' : 'manual_required',
-      lastProcessed: Date.now(),
-      lastTradeContext: {
-        tabId,
-        action: finalAction,
-        originalAction: signal.action,
-        tpAmount: settings.tpAmount,
-        slAmount: settings.slAmount,
-        symbol: signal.symbol,
-        xmUrl: symbolEntry.xmUrl
+      // If failed — refresh the page and retry once
+      if (!tradeResult?.success) {
+        console.log('[AlgoX] Trade failed, refreshing page and retrying...');
+        await saveStatus({ processingStatus: 'refreshing_page' });
+        await reloadAndWait(tabId);
+        // Full wait again after refresh
+        await new Promise((r) => setTimeout(r, 4000));
+        tradeResult = await sendTradeToContentScript(
+          tabId, finalAction, settings.tpAmount, settings.slAmount
+        );
+        console.log('[AlgoX] Retry after refresh result:', tradeResult);
       }
-    });
 
-    // Show desktop notification
-    const notifOptions = {
-      type: 'basic',
-      title: `AlgoX: ${finalAction} ${signal.symbol}${reverseMode ? ' (Reversed)' : ''}`,
-      message: tradeResult?.success
-        ? `Order placed. TP: $${settings.tpAmount} | SL: $${settings.slAmount}`
-        : `Please place the ${finalAction} order manually on XM.`
-    };
-    try {
-      const iconUrl = chrome.runtime.getURL('icons/icon128.png');
-      if (iconUrl) notifOptions.iconUrl = iconUrl;
-    } catch (_) {}
-    chrome.notifications.create(notifOptions);
+      await apiFetch(serverUrl, `/signals/${signal.id}/processed`, { method: 'PATCH' });
 
-    // Auto-close the tab after 3 seconds
-    setTimeout(() => closeTab(tabId), 3000);
+      await saveStatus({
+        processingStatus: tradeResult?.success ? 'success' : 'manual_required',
+        lastProcessed: Date.now(),
+        lastTradeContext: {
+          tabId,
+          action: finalAction,
+          originalAction: signal.action,
+          tpAmount: settings.tpAmount,
+          slAmount: settings.slAmount,
+          symbol: signal.symbol,
+          xmUrl: symbolEntry.xmUrl
+        }
+      });
+
+      // Show desktop notification
+      const notifOptions = {
+        type: 'basic',
+        title: `AlgoX: ${finalAction} ${signal.symbol}${reverseMode ? ' (Reversed)' : ''}`,
+        message: tradeResult?.success
+          ? `Order placed. TP: $${settings.tpAmount} | SL: $${settings.slAmount}`
+          : `Please place the ${finalAction} order manually on XM.`
+      };
+      try {
+        const iconUrl = chrome.runtime.getURL('icons/icon128.png');
+        if (iconUrl) notifOptions.iconUrl = iconUrl;
+      } catch (_) {}
+      chrome.notifications.create(notifOptions);
+
+    } finally {
+      // Always close the tab — 3s after success/failure, immediately on unexpected error
+      scheduleTabClose(3000);
+    }
 
   } catch (err) {
     console.error('[AlgoX] Poll error:', err.message);
